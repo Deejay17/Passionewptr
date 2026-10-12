@@ -4,7 +4,7 @@ Qué cambió en cada commit, de lo más nuevo a lo más viejo. Cada entrada llev
 
 ## 2026-10-12
 
-### Los cinco roles de un video y Remotion [sin publicar]
+### Los cinco roles de un video y Remotion [68fa5b9]
 - **Roles**: cada video se hace para un momento (intro, groove, break, subida o coro), que se decide en el guion, da forma al prompt y va en el nombre del archivo. Ficha de cada rol con su plantilla de prompt en [`roles.md`](visuales/fabrica/roles.md); los guiones del show tienen ya su rol.
 - `conformar.sh --rol`: toma entera, con o sin fundido según el rol, y el rol delante del nombre. `precoro` vale como `subida` y `drop` como `coro`.
 - Motor: reconoce `precoro` como subida y `coro`, `chorus` o `estribillo` como drop.
