@@ -59,6 +59,7 @@ Sacro, Bio-Hazard y Perreo son los bloques del show de Halloween y mantienen el 
 | `A` | Modo auto |
 | `Enter` | Pantalla completa de la salida |
 | `Mayús` + `Enter` | Toda la interfaz a pantalla completa (modo cabina) |
+| `Q` | Pausa: la imagen se queda quieta y sigue desde el mismo golpe |
 
 ## Momentos de impacto
 
@@ -191,7 +192,17 @@ Los nombres exactos de los menús pueden variar un poco según tu versión de Tr
 - Mismo Mac: instala **BlackHole 2ch**, crea un *Dispositivo agregado* con tu controladora y BlackHole, y manda el Master de Traktor también a los canales de BlackHole. En el motor elige *Audio → Entrada de audio → BlackHole*.
 - Mixer externo: lleva la salida REC o Booth a la entrada de una interfaz de audio y elígela aquí.
 
-**Controles MIDI**: en el grupo *MIDI*, pulsa **Aprender** junto a una acción y mueve un control. Si mapeas la misma perilla al filtro de Traktor y a **Tensión**, el audio y la imagen suben juntos.
+**Pausa: que la imagen se quede quieta cuando Traktor para**
+
+Al ponerse en pausa la imagen se congela (`Q` a mano). Al volver, el motor sigue desde el mismo golpe en que se quedó y en la fase del reloj de Traktor, así la frase no se descuadra aunque el MIDI clock haya seguido corriendo. Entra sola de tres maneras:
+
+1. **Silencio**: con el audio de Traktor conectado al motor, si todo queda en silencio más de 1,5 s (casilla en *Tempo y sincronía*, activada de fábrica).
+2. **El Play de los decks**: Traktor sigue mandando MIDI clock aunque pares un deck, así que hay que decirle al motor qué deck suena. En Traktor, *Controller Manager* → el dispositivo Generic MIDI del IAC → **Add Out… → Deck Common → Play/Pause**, asignado al deck A y a una nota (por ejemplo Note C3, canal 1); repite para los demás decks. En el motor, grupo *MIDI y joystick* → **Aprender** junto a *Deck A en play (Traktor)* y dale al Play del deck A. Con decks mapeados, la imagen se queda quieta cuando ninguno suena.
+3. **Stop del reloj**: si apagas el MIDI clock en el panel Master Clock de Traktor, o si deja de llegar.
+
+**Controles MIDI**: en el grupo *MIDI y joystick*, pulsa **Aprender** junto a una acción y mueve un control. Si mapeas la misma perilla al filtro de Traktor y a **Tensión**, el audio y la imagen suben juntos.
+
+**Joystick o mando USB**: conéctalo y pulsa cualquier botón para que Chrome lo vea (aparece su nombre en el grupo *MIDI y joystick*). Se aprende igual que un control MIDI: **Aprender** y aprieta un botón o mueve un eje. Los botones sirven para disparos (secciones, flash, pausa…); un eje sirve como perilla (por ejemplo *Tensión*) o, empujado a un lado, como botón (eje 1 → para el drop, eje 1 ← para el break).
 
 ## Modo auto (experimental)
 

@@ -86,6 +86,8 @@ body.cabina .layout{flex:1;min-height:0;overflow-y:auto;padding-block:12px}
 .hud{position:absolute;top:10px;left:12px;display:flex;gap:10px;align-items:baseline;font:600 11px/1.2 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--fg);text-shadow:0 1px 3px var(--stage);pointer-events:none}
 .hud b{font:800 18px/1 var(--f-display);letter-spacing:.1em}
 .hud-der{left:auto;right:12px;color:var(--muted)}
+.hud-pausa{top:auto;bottom:10px;color:var(--warn)}
+.hud-pausa b{font-size:15px}
 
 /* secciones */
 .secciones{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
@@ -247,6 +249,7 @@ body.soltando .escena{outline:2px dashed var(--live);outline-offset:4px}
       <div class="zona-segura" id="zonaSegura" hidden></div>
       <div class="hud"><b id="hudSeccion">Groove</b><span id="hudInfo"></span></div>
       <div class="hud hud-der" id="hudSalida" hidden>Salida en otra ventana</div>
+      <div class="hud hud-pausa" id="hudPausa" hidden><b>Quieto</b><span id="hudPausaPor"></span></div>
     </div>
     <div class="secciones" id="secciones" role="group" aria-label="Sección del track"></div>
     <div class="fila-moods">
@@ -296,6 +299,8 @@ body.soltando .escena{outline:2px dashed var(--live);outline-offset:4px}
           <input type="number" id="numBpm" min="60" max="200" step="0.1" value="126">
         </label>
         <p class="ayuda">Con MIDI clock, Traktor manda el tempo. Pulsa <b>Marcar el 1</b> justo en el primer tiempo de un compás para alinear las frases. Con tap, empieza a tocar en el 1.</p>
+        <label class="check"><input type="checkbox" id="chkPausaSilencio"> Quieto cuando Traktor se calla: si el audio de entrada queda en silencio más de 1,5 s, la imagen se congela y sigue donde se quedó al volver el sonido</label>
+        <p class="ayuda"><b>Pausa</b> (<kbd>Q</kbd>): la imagen se queda quieta y, al volver, sigue desde el mismo golpe, así la frase no se descuadra. También entra sola si Traktor para el MIDI clock o si mapeas en <i>MIDI</i> el Play de sus decks (<i>Deck A en play</i>…); con decks mapeados, se para cuando ninguno suena.</p>
       </div>
     </details>
 
@@ -503,9 +508,10 @@ body.soltando .escena{outline:2px dashed var(--live);outline-offset:4px}
     </details>
 
     <details class="grupo">
-      <summary>MIDI</summary>
+      <summary>MIDI y joystick</summary>
       <div class="cuerpo">
         <div class="fila"><button class="btn" type="button" id="btnMidi">Activar MIDI</button><span class="ayuda" id="txtMidi">Sin conectar</span></div>
+        <p class="ayuda" id="txtMando">Joystick o mando USB: conéctalo y pulsa cualquier botón para que Chrome lo vea. Se aprende igual que un control MIDI.</p>
         <div class="mapa" id="mapa"></div>
         <p class="ayuda">Pulsa <b>Aprender</b> y mueve un control o toca un pad. Si mapeas la misma perilla al filtro de Traktor y a <b>Tensión</b>, el audio y la imagen suben juntos.</p>
       </div>
@@ -648,7 +654,7 @@ const BASE={bpm:126,fuente:'interno',compasesSubida:8,autoDrop:true,blackoutAnte
   mood:'escenario',moodEnDrop:false,whiteoutDrop:0,siluetaBlanco:true,
   salida:{formato:'libre',ancla:'centro',zonaSegura:true},
   frases:{lista:['HOW DO YOU FEEL RIGHT NOW','LA MÁQUINA','PETER ROMO'],modo:'palabras',enDrop:false,idx:0},
-  tipos:{frases:'mood',texto:'barlow'},efectos:{blur:true,glitch:true}};
+  tipos:{frases:'mood',texto:'barlow'},efectos:{blur:true,glitch:true},pausaSilencio:true};
 const previo=guardado.leer('ajustes',{})||{};
 const ajustes=Object.assign({},BASE,previo);
 ajustes.fondo=Object.assign({},BASE.fondo,previo.fondo);
@@ -2219,6 +2225,8 @@ const ACCIONES=[
   {id:'frase',nombre:'Frase de impacto',tipo:'disparo',fn:()=>lanzarFrase()},
   {id:'logo',nombre:'Logo visible o apagado',tipo:'disparo',fn:()=>alternarLogo()},
   {id:'mood',nombre:'Siguiente mood',tipo:'disparo',fn:()=>pedirMood(siguienteMood())},
+  {id:'pausa',nombre:'Pausa (imagen quieta)',tipo:'disparo',fn:()=>{pausa.manual=!pausa.manual;}},
+  ...['A','B','C','D'].map(d=>({id:'deck'+d,nombre:'Deck '+d+' en play (Traktor)',tipo:'momento',fn:v=>{pausa.decks[d]=v;}})),
   ...ORDEN_MOODS.map(id=>({id:'mood_'+id,nombre:'Mood '+MOODS[id].nombre,tipo:'disparo',fn:()=>pedirMood(id)}))
 ];
 function alternarLogo(){ajustes.logo.on=!ajustes.logo.on;$('#chkLogo').checked=ajustes.logo.on;guardar();aviso(ajustes.logo.on?'Logo visible':'Logo apagado');}
@@ -2233,7 +2241,59 @@ function siguienteClip(){
   cortarClip(estado.seccion);
 }
 const midi={acceso:null,mapa:guardado.leer('midi',{})||{},aprendiendo:null,previo:{},puertoReloj:null};
-function describir(clave){if(!clave)return'Sin asignar';const[c,ch,n]=clave.split(':');return(c==='cc'?'CC ':'Nota ')+n+' · canal '+ch;}
+function describir(clave){
+  if(!clave)return'Sin asignar';
+  const[c,ch,n]=clave.split(':');
+  if(c==='pad'){const k=n[0],i=parseInt(n.slice(1),10)+1,dir=n.endsWith('+')?' →':n.endsWith('-')?' ←':'';return'Joystick · '+(k==='b'?'botón '+i:'eje '+i+dir);}
+  return(c==='cc'?'CC ':'Nota ')+n+' · canal '+ch;
+}
+// lo que llega de un control (MIDI o joystick): o se aprende o dispara las acciones mapeadas
+function entradaControl(clave,val,esBoton){
+  if(midi.aprendiendo){
+    if(esBoton&&val===0)return;
+    const ac=ACCIONES.find(a=>a.id===midi.aprendiendo);
+    midi.mapa[midi.aprendiendo]=clave;midi.aprendiendo=null;guardado.escribir('midi',midi.mapa);pintarMapa();
+    if(ac)aviso(ac.nombre+' → '+describir(clave));
+    midi.previo[clave]=val;return;
+  }
+  for(const ac of ACCIONES){
+    if(midi.mapa[ac.id]!==clave)continue;
+    if(ac.tipo==='continuo')ac.fn(val);
+    else if(ac.tipo==='momento')ac.fn(val>0.5);
+    else if(val>0.5&&(midi.previo[clave]||0)<=0.5)ac.fn();
+  }
+  midi.previo[clave]=val;
+}
+/* joystick o mando USB (Gamepad API): botones como pads; cada eje vale como perilla (de 0 a 1)
+   o, empujado a un lado, como botón (eje → / eje ←) */
+const mandos={previo:{},vistos:''};
+function leerMandos(){
+  if(!navigator.getGamepads)return;
+  let nombres=[];
+  for(const gp of navigator.getGamepads()){
+    if(!gp)continue;nombres.push(gp.id.replace(/\s*\(.*$/,''));
+    const g='pad:'+gp.index+':';
+    gp.buttons.forEach((b,i)=>{
+      const k=g+'b'+i,v=b.pressed||b.value>0.5?1:0,p=mandos.previo[k];mandos.previo[k]=v;
+      if(p!==undefined&&p!==v)entradaControl(k,v,true);
+    });
+    gp.axes.forEach((x,i)=>{
+      const k=g+'a'+i,v=(x+1)/2,p=mandos.previo[k];
+      if(p===undefined){mandos.previo[k]=v;mandos.previo[k+'+']=0;mandos.previo[k+'-']=0;return;}
+      const ac=midi.aprendiendo&&ACCIONES.find(a=>a.id===midi.aprendiendo);
+      for(const[s,sg]of[['+',1],['-',-1]]){   // empujado a un lado: se enciende pasado el 60 % y se apaga por debajo del 40 %
+        const kd=k+s,pd=mandos.previo[kd],on=pd?x*sg>0.4:x*sg>0.6,vd=on?1:0;
+        if(vd!==pd){mandos.previo[kd]=vd;if(!ac||ac.tipo!=='continuo')entradaControl(kd,vd,true);}
+      }
+      if(Math.abs(v-p)>0.004){
+        if(ac&&ac.tipo==='continuo'){if(Math.abs(x)>0.6){mandos.previo[k]=v;entradaControl(k,v,false);}return;}
+        mandos.previo[k]=v;if(!midi.aprendiendo)entradaControl(k,v,false);
+      }
+    });
+  }
+  const txt=nombres.length?'Joystick: '+nombres.join(', '):'';
+  if(txt&&txt!==mandos.vistos){mandos.vistos=txt;$('#txtMando').textContent=txt+'. Pulsa Aprender junto a una acción y aprieta un botón o mueve un eje.';}
+}
 async function activarMidi(){
   if(midi.acceso)return;
   const fallo=msg=>{$('#txtMidi').textContent=msg;aviso(msg);};
@@ -2256,9 +2316,9 @@ function mensajeMidi(e,inp){
     if(midi.puertoReloj&&midi.puertoReloj!==inp.id&&reloj.midiActivo(performance.now()))return;
     midi.puertoReloj=inp.id;
     if(st===0xF8)reloj.tick(e.timeStamp||performance.now());
-    else if(st===0xFA)reloj.inicioMidi();
-    else if(st===0xFB)reloj.midi.corriendo=true;
-    else reloj.midi.corriendo=false;
+    else if(st===0xFA){reloj.inicioMidi();pausa.reloj=false;pausa.desdeInicio=true;}
+    else if(st===0xFB){reloj.midi.corriendo=true;pausa.reloj=false;}
+    else{reloj.midi.corriendo=false;pausa.reloj=true;}   // Stop: la imagen se queda quieta
     return;
   }
   if(st>=0xF0)return;
@@ -2267,21 +2327,7 @@ function mensajeMidi(e,inp){
   else if(tipo===0x80||(tipo===0x90&&d[2]===0)){clase='nota';val=0;}
   else if(tipo===0xB0){clase='cc';val=d[2]/127;}
   else return;
-  const clave=clase+':'+ch+':'+d[1];
-  if(midi.aprendiendo){
-    if(clase==='nota'&&val===0)return;
-    const ac=ACCIONES.find(a=>a.id===midi.aprendiendo);
-    midi.mapa[midi.aprendiendo]=clave;midi.aprendiendo=null;guardado.escribir('midi',midi.mapa);pintarMapa();
-    if(ac)aviso(ac.nombre+' → '+describir(clave));
-    midi.previo[clave]=val;return;
-  }
-  for(const ac of ACCIONES){
-    if(midi.mapa[ac.id]!==clave)continue;
-    if(ac.tipo==='continuo')ac.fn(val);
-    else if(ac.tipo==='momento')ac.fn(val>0.5);
-    else if(val>0.5&&(midi.previo[clave]||0)<=0.5)ac.fn();
-  }
-  midi.previo[clave]=val;
+  entradaControl(clase+':'+ch+':'+d[1],val,clase==='nota');
 }
 function pintarMapa(){
   const caja=$('#mapa');caja.textContent='';
@@ -2293,7 +2339,7 @@ function pintarMapa(){
     b.textContent=midi.aprendiendo===ac.id?'Cancelar':'Aprender';
     b.addEventListener('click',async()=>{
       if(midi.aprendiendo===ac.id){midi.aprendiendo=null;pintarMapa();return;}
-      await activarMidi();if(!midi.acceso)return;
+      await activarMidi();   // sin MIDI también se puede aprender un joystick
       midi.aprendiendo=ac.id;pintarMapa();
     });
     fila.append(n,c,b);caja.appendChild(fila);
@@ -2342,6 +2388,7 @@ function teclaAbajo(e){
     case 'm':pedirMood(siguienteMood());break;
     case 'p':lanzarFrase();break;
     case 'o':alternarLogo();break;
+    case 'q':pausa.manual=!pausa.manual;break;
     case 'ArrowUp':e.preventDefault();fijarTension(estado.tensionManual+0.1);break;
     case 'ArrowDown':e.preventDefault();fijarTension(estado.tensionManual-0.1);break;
     case 'Enter':e.preventDefault();if(e.shiftKey)pantallaCabina();else pantallaCompleta();break;
@@ -2371,7 +2418,7 @@ function construirUI(){
     l.querySelector('input').addEventListener('input',e=>{ajustes.colores[k]=e.target.value;ajustes.paleta='personal';selP.value='personal';leerPaleta();dibujarMarca();pintarMoods();guardar();});
   }
   const atajos=[['1 – 5','Intro, Groove, Break, Subida, Drop'],['Espacio','Marcar el 1 del compás'],['T','Tap tempo (empieza en el 1)'],
-    ['F','Flash (mantener)'],['B','Blackout (mantener)'],['S','Strobe (mantener)'],['I','Invert (mantener)'],['G','Glitch (mantener)'],['↑ ↓','Tensión manual'],['C','Siguiente loop'],['L','Lanzar el siguiente tema (en el 1)'],['K','Parar el tema'],['M','Siguiente mood'],['P','Frase de impacto'],['O','Logo visible o apagado'],['X','Capa 2: logo, texto o ambos'],['A','Modo auto'],['Enter','Pantalla completa de la salida'],['Mayús + Enter','Toda la interfaz a pantalla completa']];
+    ['F','Flash (mantener)'],['B','Blackout (mantener)'],['S','Strobe (mantener)'],['I','Invert (mantener)'],['G','Glitch (mantener)'],['↑ ↓','Tensión manual'],['C','Siguiente loop'],['L','Lanzar el siguiente tema (en el 1)'],['K','Parar el tema'],['M','Siguiente mood'],['P','Frase de impacto'],['O','Logo visible o apagado'],['Q','Pausa: imagen quieta (y sigue desde el mismo golpe)'],['X','Capa 2: logo, texto o ambos'],['A','Modo auto'],['Enter','Pantalla completa de la salida'],['Mayús + Enter','Toda la interfaz a pantalla completa']];
   const dl=$('#atajos');
   for(const[t,d]of atajos){const dt=document.createElement('dt'),kb=document.createElement('kbd'),dd=document.createElement('dd');kb.textContent=t;dt.appendChild(kb);dd.textContent=d;dl.append(dt,dd);}
   const dm=$('#descMoods');
@@ -2379,7 +2426,7 @@ function construirUI(){
   pintarMapa();
 }
 function sincronizarControles(){
-  $('#selFuente').value=reloj.fuente;$('#numBpm').value=reloj.bpm.toFixed(1);
+  $('#selFuente').value=reloj.fuente;$('#chkPausaSilencio').checked=ajustes.pausaSilencio;$('#numBpm').value=reloj.bpm.toFixed(1);
   $('#selSubida').value=String(ajustes.compasesSubida);
   $('#chkAutoDrop').checked=ajustes.autoDrop;$('#chkBlackout').checked=ajustes.blackoutAntes;$('#chkStrobeAuto').checked=ajustes.strobeAuto;
   $('#chkAuto').checked=estado.auto;$('#chipAuto').setAttribute('aria-pressed',String(estado.auto));
@@ -2430,6 +2477,7 @@ function enlazar(){
   cambio('#chipReloj',()=>fijarFuente(reloj.fuente==='midi'?'interno':'midi'),'click');
   cambio('#chipAuto',()=>fijarAuto(!estado.auto),'click');
   cambio('#selFuente',e=>fijarFuente(e.target.value));
+  cambio('#chkPausaSilencio',e=>{ajustes.pausaSilencio=e.target.checked;guardar();});
   cambio('#numBpm',e=>{const v=parseFloat(e.target.value);if(!isFinite(v))return;if(reloj.midiActivo(performance.now())){aviso('Con MIDI clock el tempo lo marca Traktor.');return;}reloj.bpm=clamp(v,60,200);ajustes.bpm=reloj.bpm;guardar();});
   cambio('#selSubida',e=>{ajustes.compasesSubida=+e.target.value;guardar();});
   cambio('#chkAutoDrop',e=>{ajustes.autoDrop=e.target.checked;guardar();});
@@ -2599,6 +2647,7 @@ function actualizarUI(beat,a){
   const cp=mod(Math.floor(beat/4),16)+1;
   if(cp!==ui.compas){ui.compas=cp;$('#txtCompas').textContent=cp;}
   const rl=reloj.fuente==='midi'?(reloj.midiActivo(performance.now())?'ok':'espera'):'interno';
+  {const q=pausa.quieto?pausa.por:'';if(q!==ui.pausa){ui.pausa=q;$('#hudPausa').hidden=!q;$('#hudPausaPor').textContent=q&&q!=='pausa'?q:'Q para seguir';}}
   if(rl!==ui.reloj){ui.reloj=rl;$('#chipReloj').dataset.estado=rl;$('#txtReloj').textContent=rl==='ok'?'MIDI clock':rl==='espera'?'Esperando MIDI clock':'Reloj interno';}
   const sec=estado.seccion,pend=estado.pendiente?estado.pendiente.id:'';
   if(sec!==ui.sec||pend!==ui.pend){
@@ -2667,6 +2716,13 @@ let prevBeat=null,ultimoNow=performance.now(),ultimoCuadro=0,bucleId=0;
 function cuadro(){
   const now=performance.now();ultimoCuadro=now;
   const dt=clamp((now-ultimoNow)/1000,0,0.1);ultimoNow=now;
+  leerMandos();
+  if(pausa.quieto){   // quieto: no avanza nada y la salida conserva su último cuadro
+    reloj.ultimo=now;
+    vigilarPausa(now,audio.analizar(now,60/reloj.bpm,dt));
+    actualizarUI(reloj.beat,null);
+    return;
+  }
   reloj.avanzar(now);
   const beat=reloj.beat,segBeat=60/reloj.bpm;
   if(prevBeat===null||beat<prevBeat||beat-prevBeat>8)prevBeat=beat;
@@ -2675,6 +2731,7 @@ function cuadro(){
   if(Math.floor(beat*div)>Math.floor(prevBeat*div))alSub(div,Math.floor(beat*div));
   prevBeat=beat;
   const a=audio.analizar(now,segBeat,dt);
+  vigilarPausa(now,a);if(pausa.quieto)return;
   if(a&&a.kick&&ajustes.pulsoAudio)kick(PULSO[estado.seccion]>0?Math.max(0.7,PULSO[estado.seccion]):0.35);
   autoNarrativa(a,beat,dt);
   actualizarVis(beat,dt);
@@ -2686,6 +2743,39 @@ function cuadro(){
   dibujarSalida(beat);
   actualizarUI(beat,a);
 }
+/* pausa: cuando Traktor se para, la imagen se queda quieta; al volver, el motor sigue desde el mismo golpe
+   (el tema también sigue desde donde se paró), así la frase no se descuadra */
+const pausa={quieto:false,manual:false,reloj:false,decks:{},silencioDesde:null,silencio:false,beat:0,desdeInicio:false,por:''};
+function vigilarPausa(now,a){
+  if(a&&ajustes.pausaSilencio){   // audio de entrada en silencio: todo por debajo de −80 dB durante 1,5 s
+    const nivel=Math.max(a.graves,a.medios,a.agudos);
+    if(nivel<-80){if(pausa.silencioDesde===null)pausa.silencioDesde=now;if(now-pausa.silencioDesde>1500)pausa.silencio=true;}
+    else if(nivel>-72){pausa.silencioDesde=null;pausa.silencio=false;}
+  }else{pausa.silencioDesde=null;pausa.silencio=false;}
+  // el MIDI clock dejó de llegar (Traktor cerrado o el reloj apagado sin avisar)
+  const m=reloj.midi,sinReloj=reloj.fuente==='midi'&&m.corriendo&&m.ultimoTick&&now-m.ultimoTick>1500;
+  const decks=Object.values(pausa.decks),decksParados=decks.length>0&&!decks.some(v=>v);
+  const por=pausa.manual?'pausa':pausa.reloj||sinReloj?'Traktor paró el reloj':decksParados?'los decks están parados':pausa.silencio?'silencio':'';
+  pausa.por=por;
+  if(!!por!==pausa.quieto){if(por)entrarPausa();else salirPausa(now);}
+}
+function entrarPausa(){
+  pausa.quieto=true;pausa.beat=reloj.beat;pausa.desdeInicio=false;
+  for(const c of[clips.actual,clips.entrante])if(c&&!c.video.paused)c.video.pause();
+}
+function salirPausa(now){
+  pausa.quieto=false;
+  if(pausa.desdeInicio){pausa.desdeInicio=false;prevBeat=reloj.beat;return;}   // Start de Traktor: ya marcó el 1
+  const m=reloj.midi;
+  if(reloj.midiActivo(now)){   // sigue desde el golpe en que se quedó, en la fase del reloj de Traktor
+    const msTick=60000/(reloj.bpm*24),cb=(m.ticks+Math.max(0,(now-m.ultimoTick)/msTick))/24+m.offset;
+    let b=Math.floor(pausa.beat)+mod(cb,1);
+    if(b-pausa.beat>0.5)b-=1;else if(pausa.beat-b>0.5)b+=1;
+    m.offset+=b-cb;reloj.beat=b;
+  }else reloj.beat=pausa.beat;
+  reloj.ultimo=now;prevBeat=reloj.beat;
+}
+
 // el bucle corre en la ventana que está a la vista (la de salida si está abierta)
 function programar(){
   const id=++bucleId,w=salidaAbierta()?salida.win:window;
@@ -2702,7 +2792,7 @@ if(document.fonts&&document.fonts.ready)document.fonts.ready.then(dibujarMarca);
 if(reloj.fuente==='midi')activarMidi();
 programar();
 
-window.__motorPR={estado,reloj,audio,ajustes,vis,det,clips,golpes,abrirGolpes,tDeGolpe,golpeDeT,LOGO,dibujarLogo,pedirSeccion,aplicarSeccion,fijarTension,agregarClips,lanzarTema,pararTema,moverTema,pedirMood,aplicarMood,lanzarFrase,usarLogoSvg,fuentePropia};
+window.__motorPR={estado,reloj,audio,ajustes,pausa,entradaControl,leerMandos,vigilarPausa,midi,vis,det,clips,golpes,abrirGolpes,tDeGolpe,golpeDeT,LOGO,dibujarLogo,pedirSeccion,aplicarSeccion,fijarTension,agregarClips,lanzarTema,pararTema,moverTema,pedirMood,aplicarMood,lanzarFrase,usarLogoSvg,fuentePropia};
 })();
 </script>
 </body>

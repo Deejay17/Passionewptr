@@ -4,6 +4,10 @@ Qué cambió en cada commit, de lo más nuevo a lo más viejo. Cada entrada llev
 
 ## 2026-10-12
 
+### Pausa con Traktor y joystick [sin publicar]
+- **Pausa**: la imagen se queda quieta cuando Traktor se para y, al volver, sigue desde el mismo golpe y en la fase de su reloj, así la frase no se descuadra. Entra con `Q`, con el silencio del audio (más de 1,5 s), con el Play de los decks mapeado (*Deck A–D en play*) o con el Stop del MIDI clock.
+- **Joystick o mando USB**: se aprende como un control MIDI; botones para disparos y ejes como perilla o como botón empujándolos a un lado.
+
 ### Base de prompt, detección por la luz y tempo fijo [ba76edf]
 - [Base de prompt](visuales/fabrica/base-de-prompt.md) para todos los videos: un **testigo** (puntito que destella en cada tiempo en una esquina) y el momentum como el instante más luminoso.
 - **Detectar por la luz** en *Golpes*: encuentra el momentum en el golpe de luz más fuerte y, si hay testigo, marca un golpe en cada destello. La línea de tiempo muestra la curva de luz. La esquina del testigo se tapa con negro en el show y con `conformar.sh --tapar`.
