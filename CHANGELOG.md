@@ -4,7 +4,7 @@ Qué cambió en cada commit, de lo más nuevo a lo más viejo. Cada entrada llev
 
 ## 2026-10-12
 
-### El momentum y sus previos [sin publicar]
+### El momentum y sus previos [165b5d9]
 - El golpe 1 de un video es su **momentum**: el instante que tiene que caer en el 1 de la música. Los previos se cuentan hacia atrás (−1, −2… −8) y ya no existe el golpe 0; las marcas que ya tenías conservan el número que veías.
 - El clip del drop con previos arranca durante la subida, tantos tiempos antes como tenga, para que su momentum caiga justo en el drop (con drop automático).
 - Un tema con previos lanzado durante la subida pone su momentum en el drop.
