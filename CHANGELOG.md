@@ -2,12 +2,11 @@
 
 Qué cambió en cada commit, de lo más nuevo a lo más viejo. Cada entrada lleva el commit corto entre corchetes: con `git show <commit>` se ve el detalle.
 
-## Sin publicar todavía
-
-- **Pantalla completa de toda la interfaz** (botón arriba a la derecha o `Mayús` + `Enter`): la mesa de control ocupa la pantalla, el monitor crece y los ajustes se desplazan en su columna. `Enter` sigue poniendo a pantalla completa solo la salida.
-- Documentación: README en la raíz del repositorio y este registro de cambios.
-
 ## 2026-10-12
+
+### Documentación y pantalla completa de la interfaz [7d43b59]
+- **Pantalla completa de toda la interfaz** (botón arriba a la derecha o `Mayús` + `Enter`): la mesa de control ocupa la pantalla, el monitor crece y los ajustes se desplazan en su columna. `Enter` sigue poniendo a pantalla completa solo la salida.
+- README en la raíz del repositorio y este registro de cambios.
 
 ### Blur y glitch de tensión [1a968f4]
 - **Blur** que crece con la tensión, respira con cada tiempo y se limpia de golpe en el drop.
