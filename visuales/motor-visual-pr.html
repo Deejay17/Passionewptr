@@ -1616,6 +1616,7 @@ function textoGolpe(b){
   return b===0?'el momentum: compás 1, tiempo 1':'compás '+(Math.floor(b/4)+1)+', tiempo '+(mod(b,4)+1);
 }
 const conRejilla=c=>amarrado(c)&&c.dur>0;
+const tiempos=x=>Math.abs(x-Math.round(x))<0.05?String(Math.round(x)):x.toFixed(1).replace('.',',');   // 8 y no 8,0
 function cuadroDe(t){const f=golpes.c.fps;return Math.floor(t*f+1e-6);}
 function irA(t){   // al centro del cuadro: así se ve justo ese cuadro
   const c=golpes.c,v=$('#golpesVideo'),f=c.fps,n=clamp(Math.floor(t*f+1e-6),0,Math.max(0,Math.ceil(c.dur*f)-1));
@@ -1684,9 +1685,9 @@ function pintarGolpes(){
     const tramos=[];for(let i=0;i+1<m.length;i++)tramos.push((m[i+1].b-m[i].b)*60/(m[i+1].t-m[i].t));
     const varia=tramos.length>1&&Math.max(...tramos)-Math.min(...tramos)>0.5;
     r='El video va a '+String(c.bpm).replace('.',',')+' BPM'+(varia?' de media (entre marcas, de '+Math.round(Math.min(...tramos))+' a '+Math.round(Math.max(...tramos))+': el motor estira cada tramo)':'')+'. '
-      +(prev>0.05?'Antes del momentum hay '+prev.toFixed(1).replace('.',',')+' tiempos de previos. ':'')
+      +(prev>0.05?'Antes del momentum hay '+tiempos(prev)+' tiempos de previos. ':'')
       +'Desde el momentum hay '+n+(n===1?' compás entero. ':' compases enteros. ');
-    const pv=prev>0.05?prev.toFixed(1).replace('.',','):'';
+    const pv=prev>0.05?tiempos(prev):'';
     if(c.tipo==='tema')r+=pv?'Con L arranca '+pv+' tiempos antes y el momentum cae en el 1; lanzado durante la subida, cae en el drop.':'Con L entra en el 1.';
     else if(c.tipo==='subida')r+='En la subida, el momentum cae al empezar y '+(m.length>=2&&m[m.length-1].b>0?'el golpe '+nGolpe(m[m.length-1].b)+' en el drop.':'el final del video en el drop.');
     else r+=(pv&&c.secciones.has('drop')?'Como clip del drop, con drop automático arranca '+pv+' tiempos antes para que el momentum caiga en el drop. ':'')
