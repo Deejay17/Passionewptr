@@ -25,6 +25,11 @@ Un **mood** es el look completo: paleta, qué fondo sale en cada sección y pane
 | **Líneas** | El primer motor: trazos, barras y diagonales con los ángulos del logo, en ultravioleta |
 | **Escenario** | Partículas, haces de luz y la pantalla roja con el logo en silueta en el drop. Paleta **Arena**, sacada de las referencias: azul en el groove y los breaks, blanco frío en la tensión, rojo en el drop |
 | **Pared LED** | El escenario partido en 12 columnas, como una pared de pantallas |
+| **Sacro** | Oro de vela sobre negro absoluto, haces cenitales y brasas; logo en cromo. Momentos pop y vocales |
+| **Bio-Hazard** | Verde mutágeno, códigos de alarma que corren y franjas de peligro rojas en el drop. Drops pesados |
+| **Perreo** | Blanco y negro brutal, frases en tipografía de brocha y estrobo; logo en cromo |
+
+Sacro, Bio-Hazard y Perreo son los bloques del show de Halloween y mantienen el **fondo negro absoluto** para que respiren las luces y los láseres.
 
 - Se cambia con `M` (o con los botones bajo las secciones) y entra en el siguiente tiempo.
 - Cada mood recuerda tus cambios de paleta y paneles. **Restablecer el mood actual** vuelve al original.
@@ -48,9 +53,27 @@ Un **mood** es el look completo: paleta, qué fondo sale en cada sección y pane
 | `L` | Lanzar el siguiente tema en el 1 |
 | `K` | Parar el tema |
 | `M` | Siguiente mood |
+| `P` | Frase de impacto |
 | `X` | Capa 2: logo, texto o ambos |
 | `A` | Modo auto |
 | `Enter` | Pantalla completa |
+
+## Momentos de impacto
+
+- **Frases** (`P`): tipografía monumental condensada de lado a lado (de brocha en Perreo). Una palabra por tiempo o la frase entera durante un compás; entra en el siguiente tiempo y apaga el fondo mientras dura. Se escriben en *Frases de impacto*, una por línea, y se puede lanzar una en cada drop.
+- **Whiteout en el drop**: golpe corto, 1 tiempo o 1 compás de blanco total (para el CO2).
+- **Silueta**: sobre el blanco (whiteout, flash o strobe), el logo o la frase quedan en negro.
+- **Zona segura**: las frases no se salen de la franja central del 50 % de alto; en el monitor se marca con dos líneas.
+
+## Logo
+
+- **Trazado PR**: el logo redibujado trazo a trazo, con su onda de kick animada.
+- **SVG**: *Cargar logo SVG* (o arrastrarlo a la página) usa cualquier vector, con grosor ajustable, el color de la sección, kick y tensión. Se recuerda para la próxima vez. Pensado para el vector oficial.
+- **Acabado cromo negro**: reflejos metálicos que giran y destellan con el kick. Cada mood recuerda su acabado.
+
+## Pantalla 2:1
+
+En *Salida → Formato de la pantalla* elige **2:1 · pantalla de 6 × 3 m**: el monitor pasa a 2:1 y la salida dibuja la zona 2:1 dentro de la ventana (centrada o arriba a la izquierda, según cómo la mapee el procesador LED).
 
 ## Clips de video
 
@@ -88,6 +111,8 @@ for f in *.mov; do ffmpeg -i "$f" -c:v libx264 -crf 18 -pix_fmt yuv420p -an "${f
 ```
 
 ## Cómo producir los videos para que vayan sincronizados
+
+La guía completa, el script `conformar.sh` y los guiones del show están en [`fabrica/`](fabrica/README.md).
 
 - **Elige un BPM de producción** y ponlo en el nombre: `tema_nombre_128bpm.mp4`. El motor ajusta la velocidad al BPM real de la sesión.
 - **Que dure compases enteros**: a 128 BPM, 1 compás = 1,875 s y **1 minuto = 32 compases exactos**. A 120 BPM, 1 compás = 2 s.
@@ -148,6 +173,9 @@ Todo está en `motor-visual-pr.html`, en bloques comentados:
 | Partículas, haces y lavado | `function dibujarParticulas`, `dibujarHaces`, `dibujarLavado` |
 | Los paneles LED | `function componerPaneles` |
 | El texto espaciado | `function dibujarTexto` |
+| Las frases de impacto | `function lanzarFrase`, `textoFrase` |
+| El logo SVG y el cromo | `function leerSvg`, `dibujarLogoSvg`, `gradCromo` |
+| Códigos y franjas de alarma | `function dibujarCodigos`, `dibujarAlarma` |
 | La forma de la onda de kick | `function envKick` |
 | Sensibilidad del modo auto | `function autoNarrativa` |
 
