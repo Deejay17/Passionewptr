@@ -4,6 +4,12 @@ Qué cambió en cada commit, de lo más nuevo a lo más viejo. Cada entrada llev
 
 ## 2026-10-12
 
+### Moods Humo y Cruz: humo y siluetas [sin publicar]
+- **Humo**: niebla densa a ras del escenario que se ve donde le da la luz, un contraluz detrás de la cabina que deja en silueta al DJ y al logo (Shadow Crafting), una ventana de luz con láminas que se encienden una por tiempo, haces en la subida y hélices de puntos en el drop.
+- **Cruz**: la imagen recortada en cruz con cuatro hélices de puntos en espejo; el pulso viaja del centro a las puntas en cada tiempo.
+- **Forma de la imagen** en *Salida*: rectángulo, cruz o casa (con una puerta abierta para la cabina).
+- Fuera Pagoda, Bermellón y Tokiwa, y sus fondos: no funcionaban en escena.
+
 ### Protocolo de video y tres moods nuevos [73507b6]
 - **Prompt para video** (grupo nuevo del motor): rol + mood + qué se ve → el prompt a 120 BPM con el testigo, la luz del momentum, los bloques por compás y los colores del mood en palabras, y el nombre con el que guardar el video (`coro_pagoda_templo_120bpm_2c_m4s.mp4`).
 - **Afinado automático**: un video con `_m4s` en el nombre entra con su momentum puesto y el motor lo analiza solo al cargarlo (testigo, golpes, tempo fijo o warp), sin abrir *Golpes*.

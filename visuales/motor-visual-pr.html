@@ -392,10 +392,9 @@ body.soltando .escena{outline:2px dashed var(--live);outline-offset:4px}
             <option value="lavado">Lavado de color</option>
             <option value="codigos">Códigos de alarma</option>
             <option value="alarma">Franjas de alarma</option>
-            <option value="sakura">Pétalos de cerezo</option>
-            <option value="pagoda">Pagodas</option>
-            <option value="tinta">Lluvia de pinceladas</option>
-            <option value="bloques">Bloques de color (Wada)</option>
+            <option value="humo">Humo</option>
+            <option value="contraluz">Contraluz (siluetas)</option>
+            <option value="helice">Hélices de puntos</option>
             <option value="ninguno">Ninguno</option>
           </select>
         </label>
@@ -502,7 +501,7 @@ body.soltando .escena{outline:2px dashed var(--live);outline-offset:4px}
           </label>
         </div>
         <label class="campo">Qué se ve (mejor en inglés; si lo dejas vacío, usa la escena del mood)
-          <textarea id="txtPromptIdea" rows="2" placeholder="a colossal pagoda in the rain of cherry petals"></textarea>
+          <textarea id="txtPromptIdea" rows="2" placeholder="a lone figure backlit in thick haze"></textarea>
         </label>
         <label class="campo">Prompt
           <textarea id="txtPrompt" rows="11" readonly></textarea>
@@ -568,6 +567,14 @@ body.soltando .escena{outline:2px dashed var(--live);outline-offset:4px}
           <select id="selFormato">
             <option value="libre">Llenar la ventana</option>
             <option value="2:1">2:1 · pantalla de 6 × 3 m (2048 × 1024)</option>
+          </select>
+        </label>
+        <label class="campo">Forma de la imagen
+          <select id="selForma">
+            <option value="mood">La del mood (Cruz es en cruz)</option>
+            <option value="rect">Rectángulo</option>
+            <option value="cruz">Cruz</option>
+            <option value="casa">Casa: tejado y una puerta abierta para la cabina</option>
           </select>
         </label>
         <label class="campo">Dónde va la zona 2:1 dentro de la ventana
@@ -655,14 +662,8 @@ const PALETAS={
   biohazard:{nombre:'Bio-Hazard (verde mutágeno)',fondo:'#000000',base:'#39ff14',tension:'#e3ff3a',acento:'#ff1a1a',flash:'#ffffff',prompt:'toxic neon green, acid yellow and alarm red'},
   perreo:{nombre:'Perreo (blanco y negro)',fondo:'#000000',base:'#f2f2f2',tension:'#ffffff',acento:'#ffffff',flash:'#ffffff',prompt:'stark black and white only'},
   glaciar:{nombre:'Glaciar',fondo:'#00070b',base:'#1ec8ff',tension:'#e6faff',acento:'#ff5a36',flash:'#ffffff',prompt:'icy cyan, white and orange red'},
-  // «extra» es un sexto color que usan algunos fondos (los tejados de la pagoda, los bloques)
-  pagoda:{nombre:'Pagoda (oro, coral y rojo fuego)',fondo:'#050709',base:'#c9ac64',tension:'#f47e78',acento:'#be3926',flash:'#f2edb8',extra:'#584e71',
-    prompt:'antique gold, light coral pink, fire brick red, muted violet and pale cream'},
-  // del Diccionario de combinaciones de color de Sanzo Wada (241 y 242), tomados a ojo de una foto
-  bermellon:{nombre:'Bermellón (Wada 241)',fondo:'#06080a',base:'#c9a85f',tension:'#f3e7c0',acento:'#e8452c',flash:'#fff6dc',extra:'#4f5b62',
-    prompt:'vermilion red orange, dark slate blue, pale cream and golden khaki'},
-  tokiwa:{nombre:'Tokiwa (Wada 242)',fondo:'#050505',base:'#2f9b3a',tension:'#e98fa3',acento:'#c4561d',flash:'#ffe3ea',extra:'#3d3d3d',
-    prompt:'soft eosine pink, evergreen tokiwa green and burnt sienna'}
+  humo:{nombre:'Humo (blanco frío)',fondo:'#000000',base:'#d6ecff',tension:'#ffffff',acento:'#8fdcff',flash:'#ffffff',
+    prompt:'monochrome cold white and pale cyan light through thick haze'}
 };
 const ROLES=[
   ['fondo','Fondo','El color de la pantalla'],
@@ -700,25 +701,22 @@ const MOODS={
     paneles:{n:0,hueco:0.18,modo:'continuo'},acabado:'cromo',tipografia:'brocha',negro:true,
     fondos:{intro:[['barras']],groove:[['barras'],['diagonales']],break:[['particulas']],subida:[['diagonales'],['diagonales','barras']],drop:[['barras'],['onda','barras']]},
     escena:'stark graphic shapes and hard strobe light'},
-  pagoda:{nombre:'Pagoda',desc:'命運, destino y fortuna: oro, coral y rojo fuego sobre negro. Pétalos de cerezo, dos pagodas cuyos tejados se encienden uno por tiempo y lluvia de pinceladas doradas.',paleta:'pagoda',
-    paneles:{n:0,hueco:0.18,modo:'continuo'},acabado:'luz',tipografia:'brocha',negro:true,
-    fondos:{intro:[['tinta']],groove:[['sakura'],['pagoda','sakura'],['tinta','sakura']],break:[['sakura']],subida:[['pagoda'],['pagoda','sakura']],drop:[['lavado'],['pagoda','sakura']]},
-    escena:'a Japanese pagoda with layered curved roofs, falling cherry blossom petals, golden brush ink texture'},
-  bermellon:{nombre:'Bermellón',desc:'Wada 241: rojo bermellón, azul Médici, crema y oro Isabella. Bloques de color planos que se cruzan como en el libro y se mueven uno por tiempo.',paleta:'bermellon',
+  // humo y siluetas: blanco frío que atraviesa la niebla y deja en silueta al DJ y al logo (Shadow Crafting)
+  humo:{nombre:'Humo',desc:'Humo y siluetas: luz blanca fría que atraviesa la niebla, un contraluz detrás de la cabina que deja en silueta al DJ y al logo, haces desde arriba y hélices de puntos en el drop.',paleta:'humo',
     paneles:{n:0,hueco:0.18,modo:'continuo'},acabado:'luz',tipografia:'monumental',negro:true,
-    fondos:{intro:[['bloques']],groove:[['bloques'],['bloques','tinta']],break:[['tinta']],subida:[['bloques','diagonales']],drop:[['lavado'],['bloques','barras']]},
-    escena:'flat overlapping color blocks like a Bauhaus poster, paper texture, graphic and minimal'},
-  tokiwa:{nombre:'Tokiwa',desc:'Wada 242: rosa eosina, verde tokiwa y siena tostada sobre negro. Bloques que se cruzan y pétalos rosas.',paleta:'tokiwa',
-    paneles:{n:0,hueco:0.18,modo:'continuo'},acabado:'luz',tipografia:'monumental',negro:true,
-    fondos:{intro:[['bloques']],groove:[['bloques'],['sakura','bloques']],break:[['sakura']],subida:[['bloques','diagonales']],drop:[['lavado'],['bloques','barras']]},
-    escena:'evergreen pine forest at night with soft pink blossoms, Japanese woodblock print style'}
+    fondos:{intro:[['humo']],groove:[['contraluz','humo'],['haces','humo']],break:[['contraluz','humo']],subida:[['haces','humo'],['haces','contraluz']],drop:[['helice','humo'],['contraluz','haces']]},
+    escena:'thick haze lit by cold white volumetric light beams, backlit black silhouettes, minimal monochrome stage'},
+  cruz:{nombre:'Cruz',desc:'La imagen en forma de cruz, como la pantalla del escenario: cuatro hélices de puntos en espejo, como un caleidoscopio, sobre humo; el pulso viaja del centro a las puntas en cada tiempo.',paleta:'humo',
+    paneles:{n:0,hueco:0.18,modo:'continuo'},acabado:'luz',tipografia:'monumental',negro:true,forma:'cruz',
+    fondos:{intro:[['humo']],groove:[['helice']],break:[['humo']],subida:[['helice','haces']],drop:[['helice','humo'],['helice','haces']]},
+    escena:'four mirrored twisting ribbons made of glowing dots, kaleidoscopic symmetry, cold white and cyan, thick haze'}
 };
 const ORDEN_MOODS=Object.keys(MOODS);
 const BASE={bpm:126,fuente:'interno',compasesSubida:8,autoDrop:true,blackoutAntes:true,strobeAuto:true,strobeSeguro:true,
   paleta:'arena',fondo:{on:true,op:0.8,patron:'auto',fuente:'clips'},logo:{on:true,op:1,tam:0.62,acabado:'luz',fuente:'trazado',grosor:2},pulsoAudio:true,umbralKick:6,
   clips:{cada:8,tinte:true,velocidad:true},paneles:{n:0,hueco:0.18,modo:'continuo'},texto:{modo:'logo',l1:'PR',l2:'DJ SET'},
   mood:'escenario',moodEnDrop:false,whiteoutDrop:0,siluetaBlanco:true,
-  salida:{formato:'libre',ancla:'centro',zonaSegura:true},
+  salida:{formato:'libre',ancla:'centro',zonaSegura:true,forma:'mood'},
   frases:{lista:['HOW DO YOU FEEL RIGHT NOW','LA MÁQUINA','PETER ROMO'],modo:'palabras',enDrop:false,idx:0},
   tipos:{frases:'mood',texto:'barlow'},efectos:{blur:true,glitch:true},pausaSilencio:true};
 const previo=guardado.leer('ajustes',{})||{};
@@ -1265,76 +1263,97 @@ function dibujarAlarma(ctx,W,H,V,col,beat){   // franjas de peligro arriba y aba
   }
   ctx.restore();
 }
-/* fondos del mood Pagoda: pétalos de cerezo que caen, dos pagodas cuyos tejados se encienden uno por tiempo
-   (el de abajo en el 1, el de arriba en el 4, y la aguja en el 1 de cada compás) y una lluvia de pinceladas doradas */
-const PETALOS=(()=>{const r=azar(73),a=[];for(let i=0;i<170;i++)a.push({x:r(),y:r(),z:0.35+r()*0.65,giro:r()*6.28,vg:(r()-0.5)*2.4,fase:r()*6.28,claro:r()<0.3});return a;})();
-function dibujarSakura(ctx,W,H,V,col,beat){
-  const k=clamp(estado.kick),u=Math.max(1,H/900),T=estado.fase,viento=0.18+0.5*V.tension;
-  for(const p of PETALOS){
-    const y=mod(p.y+T*(0.035+0.05*p.z),1.15)-0.075,x=mod(p.x+y*viento+Math.sin(T*0.8+p.fase)*0.02,1.1)-0.05;
-    const s=(5+9*p.z)*u*(1+0.35*k*p.z),a=clamp((0.35+0.65*p.z)*V.bg*(1+0.4*k));   // el kick los abre
-    if(a<0.02)continue;
-    ctx.save();ctx.translate(x*W,y*H);ctx.rotate(p.giro+T*p.vg);
-    ctx.beginPath();ctx.moveTo(0,-s);ctx.quadraticCurveTo(s*0.95,-s*0.25,s*0.12,s);ctx.lineTo(0,s*0.72);ctx.lineTo(-s*0.12,s);   // la muesca del pétalo
-    ctx.quadraticCurveTo(-s*0.95,-s*0.25,0,-s);
-    ctx.fillStyle=rgba(p.claro?mezcla(pal.tension,pal.flash,0.55):pal.tension,a);ctx.fill();ctx.restore();
+/* humo y siluetas */
+// la niebla: una textura de ruido suave (se calcula una vez por paleta) en tres capas que derivan a distinta velocidad
+const niebla={canvas:null,clave:''};
+function texturaNiebla(){
+  const col=mezcla(pal.base,[255,255,255],0.5),clave=col.join(',');
+  if(niebla.canvas&&niebla.clave===clave)return niebla.canvas;
+  const W=192,H=96,c=niebla.canvas||document.createElement('canvas');c.width=W;c.height=H;
+  const g=c.getContext('2d'),img=g.createImageData(W,H),r=azar(5),oct=[[12,6,0.5],[24,12,0.3],[48,24,0.2]];
+  const rej=oct.map(([gx,gy])=>{const a=[];for(let i=0;i<(gx+1)*(gy+1);i++)a.push(r());return a;});
+  const suave=t=>t*t*(3-2*t);
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    let v=0;
+    oct.forEach(([gx,gy,peso],k)=>{   // ruido de valor que se repite en horizontal, para poder desplazarlo sin costura
+      const fx=x/W*gx,fy=y/H*gy,x0=Math.floor(fx),y0=Math.floor(fy),tx=suave(fx-x0),ty=suave(fy-y0),q=rej[k];
+      const at=(i,j)=>q[(j%(gy+1))*(gx+1)+(i%gx)];
+      v+=peso*lerp(lerp(at(x0,y0),at(x0+1,y0),tx),lerp(at(x0,y0+1),at(x0+1,y0+1),tx),ty);
+    });
+    const i=(y*W+x)*4,abajo=y/H,dens=(0.18+0.82*abajo*abajo)*Math.min(1,(1-abajo)*8);   // a ras del escenario, más densa; arriba se deshace
+    img.data[i]=col[0];img.data[i+1]=col[1];img.data[i+2]=col[2];img.data[i+3]=Math.round(255*clamp((v-0.42)*2.6)*dens);
   }
+  g.putImageData(img,0,0);niebla.clave=clave;return niebla.canvas=c;
 }
-function tejado(ctx,cx,y,w,h){   // alero curvo con las puntas hacia arriba y el faldón hasta la cumbrera
-  ctx.beginPath();
-  ctx.moveTo(cx-w/2,y-h*0.55);ctx.quadraticCurveTo(cx-w*0.36,y,cx-w*0.22,y);ctx.lineTo(cx+w*0.22,y);
-  ctx.quadraticCurveTo(cx+w*0.36,y,cx+w/2,y-h*0.55);ctx.quadraticCurveTo(cx+w*0.3,y-h*0.45,cx+w*0.16,y-h);
-  ctx.lineTo(cx-w*0.16,y-h);ctx.quadraticCurveTo(cx-w*0.3,y-h*0.45,cx-w/2,y-h*0.55);ctx.closePath();
-}
-function dibujarPagoda(ctx,W,H,V,col,beat){
-  const pisos=4,k=clamp(estado.kick),drop=estado.seccion==='drop',div=estado.seccion==='subida'?division():1;
-  const toca=Math.floor(beat*div),fase=mod(beat*div,1),ex=(PALETAS[ajustes.paleta]||{}).extra;
-  const morado=ex?hexRgb(ex):mezcla(pal.base,pal.fondo,0.6),oro=pal.base,ac=pal.acento;
-  const enUno=mod(Math.floor(beat),4)===0?1-mod(beat,1):0;
-  for(const lado of[0.17,0.83]){
-    const cx=W*lado,base=H*0.94,piso=H*0.82/(pisos+0.6);
-    for(let i=0;i<pisos;i++){
-      const y=base-i*piso,w=W*0.21*(1-i*0.15),h=piso*0.62,ye=y-piso*0.35;
-      const brillo=drop?0.4+0.6*k:mod(toca,pisos)===i?1-fase:0;   // en el drop laten todos con el kick
-      ctx.fillStyle=rgba(mezcla(morado,[0,0,0],0.35),0.6*V.bg);ctx.fillRect(cx-w*0.17,ye,w*0.34,piso*0.35);   // el cuerpo del piso
-      ctx.fillStyle=rgba(ac,(0.25+0.6*brillo)*V.bg);ctx.fillRect(cx-w*0.17,y-piso*0.06,w*0.34,Math.max(1,piso*0.035));   // la baranda roja
-      tejado(ctx,cx,ye,w,h);
-      ctx.fillStyle=rgba(mezcla(morado,ac,0.65*brillo),clamp((0.65+0.35*brillo)*V.bg*1.3));ctx.fill();
-      ctx.strokeStyle=rgba(mezcla(oro,pal.flash,0.5*brillo),clamp((0.5+0.5*brillo)*V.bg*1.3));ctx.lineWidth=Math.max(1,H*0.003*(1+brillo));ctx.stroke();
-    }
-    const cima=base-(pisos-1)*piso-piso*0.35-piso*0.62;   // la aguja se enciende en el 1 de cada compás
-    ctx.strokeStyle=rgba(mezcla(oro,pal.flash,enUno),(0.35+0.6*Math.max(enUno,drop?k:0))*V.bg);ctx.lineWidth=Math.max(1,H*0.004);
-    ctx.beginPath();ctx.moveTo(cx,cima);ctx.lineTo(cx,cima-piso*0.7);ctx.stroke();
-    for(let j=1;j<=3;j++){const yy=cima-piso*0.18*j;ctx.beginPath();ctx.moveTo(cx-W*0.008,yy);ctx.lineTo(cx+W*0.008,yy);ctx.stroke();}
-  }
-}
-const PINCELADAS=(()=>{const r=azar(91),a=[];for(let i=0;i<90;i++)a.push({x:r(),y:r(),l:0.02+r()*0.07,g:0.4+r()*1.2,v:0.2+r()*0.8});return a;})();
-function dibujarTinta(ctx,W,H,V,col,beat){   // pinceladas verticales doradas que caen despacio, como la textura del papel
-  const marcado=Math.floor(beat),k=clamp(estado.kick);
-  ctx.save();ctx.lineCap='round';
-  PINCELADAS.forEach((p,i)=>{
-    const y=(mod(p.y+estado.fase*0.02*p.v,1.2)-0.1)*H,x=p.x*W,largo=p.l*H*(1+V.tension),destaca=mod(i+marcado,9)===0;   // con cada tiempo se aviva una de cada nueve
-    ctx.strokeStyle=rgba(destaca?mezcla(pal.base,pal.flash,0.4):pal.base,clamp((destaca?0.6:0.2)*V.bg*(1+0.4*k)));
-    ctx.lineWidth=Math.max(1,H*0.0025*p.g);ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+largo*0.04,y+largo);ctx.stroke();
+function dibujarHumo(ctx,W,H,V,col,beat){
+  const tex=texturaNiebla(),k=clamp(estado.kick),T=estado.fase;
+  ctx.save();ctx.globalCompositeOperation='lighter';ctx.imageSmoothingEnabled=true;
+  // poca y oscura: el humo se ve donde le da la luz (contraluz, haces) y respira con el kick
+  [[0.012,0.2,1.25],[0.02,0.13,1.6],[0.032,0.08,2.1]].forEach(([vel,a,esc],i)=>{
+    const w=W*esc,h=H*1.1,x=-mod(T*vel*W*(i%2?1:-1),w),y=-H*0.05+Math.sin(T*0.13+i)*H*0.03;
+    ctx.globalAlpha=clamp(a*(0.45+0.7*V.bg)*(1+0.6*k));
+    ctx.drawImage(tex,x,y,w,h);ctx.drawImage(tex,x+w,y,w,h);
   });
   ctx.restore();
 }
-// la composición del libro de Wada: cuatro rectángulos planos que se cruzan; en cada tiempo uno se desliza a otro sitio
-const BLOQUES=[[-0.02,-0.44,0.44,0.22],[-0.42,-0.2,0.46,0.2],[0.02,-0.17,0.42,0.2],[-0.22,0.04,0.44,0.22]];
-function dibujarBloques(ctx,W,H,V,col,beat){
-  const ex=(PALETAS[ajustes.paleta]||{}).extra,cols=[pal.acento,ex?hexRgb(ex):mezcla(pal.base,pal.fondo,0.4),pal.tension,pal.base];
-  const k=clamp(estado.kick),t=Math.floor(beat),f=mod(beat,1),u=Math.min(W,H*1.6)*0.62*(1+0.05*k),ir=1-Math.pow(1-Math.min(1,f*3),3);
-  const sitio=(i,n)=>(mod(n*(i+2)*37,5)-2)*0.07;   // a dónde va el bloque i la n-ésima vez que le toca
-  const tiembla=V.tension*0.012*u;
-  BLOQUES.forEach(([x,y,w,h],i)=>{
-    const n=Math.floor((t-i)/4)+1,toca=mod(t,4)===i,dx=toca?lerp(sitio(i,n-1),sitio(i,n),ir):sitio(i,n);
-    const jx=tiembla?(Math.sin(beat*31+i)*tiembla):0;
-    ctx.fillStyle=rgba(cols[i],clamp(V.bg*(0.7+0.3*(toca?1-f:0))*(1+0.3*k)));
-    ctx.fillRect(W/2+(x+dx)*u+jx,H/2+y*u,w*u,h*u);
-  });
+// el contraluz: una luz blanca detrás de la cabina, una ventana de luz con láminas arriba y bokeh; deja todo lo de delante en silueta
+function dibujarContraluz(ctx,W,H,V,col,beat){
+  const k=clamp(estado.kick),claro=mezcla(pal.base,pal.flash,0.6),f=mod(beat,1),marcado=Math.floor(beat);
+  ctx.save();ctx.globalCompositeOperation='lighter';
+  // la luz de detrás de la cabina: un óvalo grande abajo en el centro
+  ctx.save();ctx.translate(W/2,H*0.86);ctx.scale(1,0.62);
+  const r=Math.max(W,H)*0.42,g=ctx.createRadialGradient(0,0,0,0,0,r);
+  g.addColorStop(0,rgba(claro,clamp(0.7*V.bg*(0.7+0.4*k))));g.addColorStop(0.3,rgba(pal.base,clamp(0.22*V.bg)));g.addColorStop(1,rgba(pal.base,0));
+  ctx.fillStyle=g;ctx.fillRect(-r,-r,2*r,2*r);ctx.restore();
+  // la ventana de luz: láminas verticales que se encienden una por tiempo
+  const x0=W*0.36,x1=W*0.64,y0=H*0.08,y1=H*0.44,n=8;
+  const gv=ctx.createLinearGradient(0,y0,0,y1);gv.addColorStop(0,rgba(claro,0.55*V.bg));gv.addColorStop(1,rgba(claro,0.05*V.bg));
+  ctx.fillStyle=gv;ctx.fillRect(x0,y0,x1-x0,y1-y0);
+  for(let i=0;i<n;i++){
+    const xi=x0+(x1-x0)*(i+0.5)/n,vivo=mod(marcado,n)===i?1-f:0;
+    ctx.fillStyle=rgba(claro,clamp((0.12+0.6*vivo)*V.bg));ctx.fillRect(xi-W*0.004,y0,W*0.008,(y1-y0)*(0.6+0.4*vivo));
+  }
+  // bokeh: círculos suaves que flotan bajo la ventana
+  for(let i=0;i<7;i++){
+    const bx=x0+(x1-x0)*(i+0.5)/7+Math.sin(estado.fase*0.4+i)*W*0.01,by=y1-H*0.05+Math.sin(estado.fase*0.3+i*1.7)*H*0.02,br=H*(0.022+0.01*(i%3));
+    const gb=ctx.createRadialGradient(bx,by,0,bx,by,br);gb.addColorStop(0,rgba(claro,0.4*V.bg*(1+0.5*k)));gb.addColorStop(1,rgba(claro,0));
+    ctx.fillStyle=gb;ctx.beginPath();ctx.arc(bx,by,br,0,Math.PI*2);ctx.fill();
+  }
+  ctx.restore();
+}
+// hélices de puntos: cuatro cintas retorcidas hechas de puntos, en espejo como un caleidoscopio; el pulso viaja del centro a las puntas
+const punto=(()=>{const c=document.createElement('canvas');c.width=c.height=32;const g=c.getContext('2d'),r=g.createRadialGradient(16,16,0,16,16,16);
+  r.addColorStop(0,'rgba(255,255,255,1)');r.addColorStop(0.35,'rgba(255,255,255,0.75)');r.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=r;g.fillRect(0,0,32,32);return c;})();
+const tintes={};
+function puntoDe(col){   // el sprite del punto, teñido con el color (se guarda por color)
+  const clave=col.map(v=>v>>3).join(',');if(tintes[clave])return tintes[clave];
+  const c=document.createElement('canvas');c.width=c.height=32;const g=c.getContext('2d');
+  g.drawImage(punto,0,0);g.globalCompositeOperation='source-in';g.fillStyle=rgba(col,1);g.fillRect(0,0,32,32);
+  g.globalCompositeOperation='lighter';g.globalAlpha=0.6;g.drawImage(punto,8,8,16,16);   // el centro, blanco
+  const ks=Object.keys(tintes);if(ks.length>24)delete tintes[ks[0]];
+  return tintes[clave]=c;
+}
+function dibujarHelice(ctx,W,H,V,col,beat){
+  const k=clamp(estado.kick),T=estado.fase*(0.8+1.6*V.tension),onda=mod(beat,1),sprite=puntoDe(mezcla(col,pal.flash,0.35));
+  const NU=44,NV=7,u0=0.1;
+  ctx.save();ctx.globalCompositeOperation='lighter';
+  for(let brazo=0;brazo<4;brazo++){
+    const horizontal=brazo%2===0,L=(horizontal?W:H)*0.47,ang=brazo*Math.PI/2,ca=Math.cos(ang),sa=Math.sin(ang),esp=brazo>=2?-1:1;   // en espejo
+    for(let iu=0;iu<NU;iu++){
+      const u=u0+(1-u0)*iu/(NU-1),th=u*Math.PI*2.4*esp+T,w=H*0.11*(0.35+u),pulso=Math.exp(-Math.pow((u-onda)*7,2))*(0.6+0.8*k);
+      for(let iv=0;iv<NV;iv++){
+        const v=iv/(NV-1)*2-1,y=v*w*Math.cos(th),z=v*w*Math.sin(th),pers=1/(1+z/(H*0.9));
+        const lx=u*L*pers,ly=y*pers,x=W/2+lx*ca-ly*sa,yy=H/2+lx*sa+ly*ca;
+        const r=H*0.012*(0.5+u)*pers*(1+0.6*pulso),a=clamp((0.25+0.5*pers*(0.5+0.5*u)+pulso)*V.bg);
+        if(a<0.03)continue;
+        ctx.globalAlpha=a;ctx.drawImage(sprite,x-r,yy-r,2*r,2*r);
+      }
+    }
+  }
+  ctx.restore();
 }
 const DIBUJO={barras:dibujarBarras,diagonales:dibujarDiagonales,onda:dibujarOndaGrande,particulas:dibujarParticulas,haces:dibujarHaces,lavado:dibujarLavado,codigos:dibujarCodigos,alarma:dibujarAlarma,
-  sakura:dibujarSakura,pagoda:dibujarPagoda,tinta:dibujarTinta,bloques:dibujarBloques};
+  humo:dibujarHumo,contraluz:dibujarContraluz,helice:dibujarHelice};
 function patrones(beat){
   const f=ajustes.fondo.patron;
   if(f!=='auto')return DIBUJO[f]?[f]:[];
@@ -2133,13 +2152,16 @@ function escena(ctx,W,H,beat){
       if(capaFondo.width!==W||capaFondo.height!==H){capaFondo.width=W;capaFondo.height=H;}
       c=cfx;c.globalCompositeOperation='source-over';c.globalAlpha=1;c.clearRect(0,0,W,H);c.lineCap='round';
     }
+    const forma=ajustes.salida.forma==='mood'?(MOODS[ajustes.mood]||{}).forma:ajustes.salida.forma;
+    if(forma==='cruz'||forma==='casa'){c.save();recortarForma(c,W,H,forma);}
     conClip=(!!clips.tema||usaClips())&&dibujarClip(c,W,H);
     if(!conClip||ajustes.fondo.fuente==='mixto'){
-      const ps=patrones(beat);lavado=ps.includes('lavado');
+      const ps=patrones(beat);lavado=ps.includes('lavado')||ps.includes('contraluz');   // a contraluz, el logo también queda en silueta
       c.globalAlpha=ajustes.fondo.op*(conClip?0.6:1);
       for(const p of ps)DIBUJO[p](c,W,H,vis,vis.colLineas,beat);
       c.globalAlpha=1;
     }
+    if(forma==='cruz'||forma==='casa')c.restore();
     if(pn.n>0)componerPaneles(ctx,capaFondo,W,H,pn);
   }
   if(ajustes.logo.on&&ajustes.logo.op>0&&estado.logoAlfa>0.01){
@@ -2149,6 +2171,16 @@ function escena(ctx,W,H,beat){
   }
   ctx.globalAlpha=1;
   dibujarFrase(ctx,W,H,beat);
+}
+// formas de pantalla de escenario: lo de fuera queda negro, como si la pantalla tuviera esa forma
+function recortarForma(ctx,W,H,forma){
+  ctx.beginPath();
+  if(forma==='cruz'){const a=H*0.21;ctx.rect(W/2-a,0,2*a,H);ctx.rect(W*0.08,H*0.29,W*0.84,H*0.42);}
+  else{   // casa: tejado a dos aguas y una puerta abierta abajo en el centro, donde va la cabina
+    ctx.moveTo(W*0.12,H*0.3);ctx.lineTo(W*0.5,H*0.02);ctx.lineTo(W*0.88,H*0.3);ctx.lineTo(W*0.88,H*0.97);ctx.lineTo(W*0.6,H*0.97);
+    ctx.lineTo(W*0.6,H*0.66);ctx.lineTo(W*0.4,H*0.66);ctx.lineTo(W*0.4,H*0.97);ctx.lineTo(W*0.12,H*0.97);ctx.closePath();
+  }
+  ctx.clip('nonzero');
 }
 function dibujarCapa2(ctx,W,H,beat,color,glow,recorte,cromo,esquina=0){
   // esquina 0 → centro; 1 → pequeño abajo a la derecha, dentro de la franja segura, para no tapar el video
@@ -2653,7 +2685,7 @@ function sincronizarControles(){
   $('#selTipoFrase').value=ajustes.tipos.frases==='propia'&&!fuentePropia.cargada?'mood':ajustes.tipos.frases;
   $('#selTipoTexto').value=ajustes.tipos.texto==='propia'&&fuentePropia.cargada?'propia':'barlow';
   $('#selFuenteLogo').value=ajustes.logo.fuente==='svg'&&logoSvg.formas?'svg':'trazado';$('#rngGrosor').value=ajustes.logo.grosor;$('#selAcabado').value=ajustes.logo.acabado;
-  $('#selFormato').value=ajustes.salida.formato;$('#selAncla').value=ajustes.salida.ancla;$('#chkZona').checked=ajustes.salida.zonaSegura;
+  $('#selFormato').value=ajustes.salida.formato;$('#selForma').value=ajustes.salida.forma||'mood';$('#selAncla').value=ajustes.salida.ancla;$('#chkZona').checked=ajustes.salida.zonaSegura;
   aplicarFormato();
   fijarTension(estado.tensionManual);
   pintarMoods();
@@ -2727,6 +2759,7 @@ function enlazar(){
   cambio('#selAcabado',e=>{ajustes.logo.acabado=e.target.value;guardar();});
   cambio('#selFormato',e=>{ajustes.salida.formato=e.target.value;aplicarFormato();guardar();});
   cambio('#selAncla',e=>{ajustes.salida.ancla=e.target.value;guardar();});
+  cambio('#selForma',e=>{ajustes.salida.forma=e.target.value;guardar();});
   cambio('#chkZona',e=>{ajustes.salida.zonaSegura=e.target.checked;aplicarFormato();guardar();});
   cambio('#btnResetMood',restablecerMood,'click');
   cambio('#selFuenteFondo',e=>{ajustes.fondo.fuente=e.target.value;guardar();if(usaClips()&&!clips.actual)cortarClip(estado.seccion);});

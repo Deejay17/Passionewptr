@@ -28,11 +28,12 @@ Un **mood** es el look completo: paleta, qué fondo sale en cada sección y pane
 | **Sacro** | Oro de vela sobre negro absoluto, haces cenitales y brasas; logo en cromo. Momentos pop y vocales |
 | **Bio-Hazard** | Verde mutágeno, códigos de alarma que corren y franjas de peligro rojas en el drop. Drops pesados |
 | **Perreo** | Blanco y negro brutal, frases en tipografía de brocha y estrobo; logo en cromo |
-| **Pagoda** | 命運, destino y fortuna: oro, coral y rojo fuego sobre negro. Pétalos de cerezo que caen, dos pagodas cuyos tejados se encienden uno por tiempo (la aguja en el 1 de cada compás), lluvia de pinceladas doradas y la pantalla roja en el drop |
-| **Bermellón** | Combinación 241 del diccionario de Sanzo Wada: rojo bermellón, azul Médici, crema y oro Isabella en bloques de color planos que se cruzan y se mueven uno por tiempo |
-| **Tokiwa** | Combinación 242 de Wada: rosa eosina, verde tokiwa y siena tostada; bloques y pétalos rosas |
+| **Humo** | Humo y siluetas: luz blanca fría que atraviesa la niebla (densa a ras del escenario), un contraluz detrás de la cabina que deja en silueta al DJ y al logo, una ventana de luz con láminas que se encienden una por tiempo, haces desde arriba en la subida y hélices de puntos en el drop |
+| **Cruz** | La imagen en forma de cruz, como la pantalla del escenario: cuatro hélices de puntos en espejo, como un caleidoscopio, con un pulso que viaja del centro a las puntas en cada tiempo |
 
-Sacro, Bio-Hazard y Perreo son los bloques del show de Halloween. Ellos, Pagoda, Bermellón y Tokiwa mantienen el **fondo negro absoluto** para que respiren las luces y los láseres. Las frases en kanji (por ejemplo 命運) salen con la tipografía japonesa del sistema.
+Sacro, Bio-Hazard y Perreo son los bloques del show de Halloween. Ellos, Humo y Cruz mantienen el **fondo negro absoluto** para que respiren las luces y los láseres.
+
+**Forma de la imagen** (en *Salida*): rectángulo, **cruz** o **casa** (tejado a dos aguas con una puerta abierta abajo, donde va la cabina). Lo de fuera queda negro, como si la pantalla tuviera esa forma; el mood Cruz la trae puesta.
 
 - Se cambia con `M` (o con los botones bajo las secciones) y entra en el siguiente tiempo.
 - Cada mood recuerda tus cambios de paleta y paneles. **Restablecer el mood actual** vuelve al original.

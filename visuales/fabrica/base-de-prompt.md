@@ -11,7 +11,7 @@ Los visuales son de dos clases: los **procedurales**, que el motor dibuja en viv
 | **Luz del momentum** | El instante más luminoso del video es el que cae en el 1 (en una subida, el blanco final) | El motor pone ahí el momentum |
 | **Nombre del archivo** | `rol_mood_idea_120bpm_4c_m4s.mp4`: rol, BPM, compases y el segundo del momentum (`m4s`) | El motor lo coloca en su sección, lo amarra y busca la luz cerca de ese segundo |
 
-El **generador** está en el motor (grupo *Prompt para video*): rol + mood + qué se ve → el prompt y el nombre. Los colores salen de la paleta del mood, con palabras, y si no escribes nada usa la escena del mood (la pagoda, la catedral, los bloques de Wada…).
+El **generador** está en el motor (grupo *Prompt para video*): rol + mood + qué se ve → el prompt y el nombre. Los colores salen de la paleta del mood, con palabras, y si no escribes nada usa la escena del mood (el humo a contraluz, la catedral, las hélices de puntos…).
 
 Al **cargar** un video con ese nombre, el motor ya sabe dónde está el momentum y lo afina solo con la luz: no hay que abrir *Golpes*. Si el generador no respetó el testigo, el momentum se queda donde dice el nombre y el tempo a 120, que suele bastar.
 
