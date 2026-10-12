@@ -4,7 +4,7 @@ Qué cambió en cada commit, de lo más nuevo a lo más viejo. Cada entrada llev
 
 ## 2026-10-12
 
-### Golpes: el warp de los videos [sin publicar]
+### Golpes: el warp de los videos [574418b]
 - Botón **Golpes** en cada clip: se marca en qué cuadro cae el golpe 1 (el que abre la secuencia) y los golpes que se quiera, cuadro a cuadro y sobre una línea de tiempo con la rejilla del video. Con dos marcas el motor calcula el BPM del video; con más, estira o encoge cada tramo para que todos los golpes caigan en los de la música. **Reproducir con clic** lo deja comprobar de oído.
 - Los loops entran en su sección por el golpe 1, los temas hacen sonar sus **previos** antes del 1 y las subidas llevan el golpe 1 al principio y la última marca al drop.
 - `conformar.sh --marcas 0.62:1,4.40:9` aplica el mismo warp al archivo y lo hace empezar en el golpe 1; el editor da la línea ya escrita.
