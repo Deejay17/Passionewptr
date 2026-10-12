@@ -390,6 +390,12 @@ body.soltando .escena{outline:2px dashed var(--live);outline-offset:4px}
             <option value="particulas">Partículas</option>
             <option value="haces">Haces de luz</option>
             <option value="lavado">Lavado de color</option>
+            <option value="codigos">Códigos de alarma</option>
+            <option value="alarma">Franjas de alarma</option>
+            <option value="sakura">Pétalos de cerezo</option>
+            <option value="pagoda">Pagodas</option>
+            <option value="tinta">Lluvia de pinceladas</option>
+            <option value="bloques">Bloques de color (Wada)</option>
             <option value="ninguno">Ninguno</option>
           </select>
         </label>
@@ -469,6 +475,40 @@ body.soltando .escena{outline:2px dashed var(--live);outline-offset:4px}
         <label class="check"><input type="checkbox" id="chkTinte"> Teñir con la paleta para mantener la identidad</label>
         <label class="check"><input type="checkbox" id="chkVelClip"> Velocidad según la sección: lento en el break, acelera en la subida</label>
         <p class="ayuda">En la subida los cortes se aceleran solos: cada 2 compases y, en la segunda mitad, cada compás (si no hay un clip de tipo Subida). El drop siempre corta a un clip nuevo.</p>
+      </div>
+    </details>
+
+    <details class="grupo">
+      <summary>Prompt para video</summary>
+      <div class="cuerpo">
+        <p class="ayuda">El prompt sale con las señales que el motor sabe leer: el puntito del ritmo, la luz del momentum y los bloques por compás, siempre a 120 BPM. Guarda el video con el <b>nombre</b> que te da aquí: al cargarlo, el motor sabe qué es, dónde está su momentum y lo afina solo. Sirve para cualquier canción, porque el motor lo lleva a su BPM.</p>
+        <div class="fila">
+          <label class="campo">Rol
+            <select id="selPromptRol">
+              <option value="intro">Intro: aparecer</option>
+              <option value="groove">Groove: moverse sin llegar</option>
+              <option value="break">Break: respirar</option>
+              <option value="subida">Subida o precoro: acelerar hacia la luz</option>
+              <option value="coro" selected>Coro o drop: golpear y sostener</option>
+            </select>
+          </label>
+          <label class="campo">Mood <select id="selPromptMood"></select></label>
+          <label class="campo" id="campoPrevios">Previos antes del momentum
+            <select id="selPromptPrevios">
+              <option value="8">8 tiempos (4 s de tensión)</option>
+              <option value="4">4 tiempos (2 s)</option>
+              <option value="0">Sin previos: el impacto en el primer cuadro</option>
+            </select>
+          </label>
+        </div>
+        <label class="campo">Qué se ve (mejor en inglés; si lo dejas vacío, usa la escena del mood)
+          <textarea id="txtPromptIdea" rows="2" placeholder="a colossal pagoda in the rain of cherry petals"></textarea>
+        </label>
+        <label class="campo">Prompt
+          <textarea id="txtPrompt" rows="11" readonly></textarea>
+        </label>
+        <div class="fila"><button class="btn" type="button" id="btnCopiarPrompt">Copiar el prompt</button><button class="btn" type="button" id="btnCopiarNombre">Copiar el nombre</button></div>
+        <p class="ayuda">Guarda el video como <code id="txtPromptNombre"></code> (o con <code>.mov</code>). Si tienes que unir dos tomas o pasarlo por <code>conformar.sh</code>, conserva el final del nombre: <code>_120bpm_…_m…s</code>.</p>
       </div>
     </details>
 
@@ -607,14 +647,22 @@ function aviso(msg){const el=$('#aviso');el.textContent=msg;el.hidden=false;clea
 
 /* ───────── paletas y ajustes ───────── */
 const PALETAS={
-  arena:{nombre:'Arena (azul, blanco y rojo)',fondo:'#01040c',base:'#2a6bff',tension:'#d8e8ff',acento:'#ff1f1f',flash:'#ffffff'},
-  ultravioleta:{nombre:'Ultravioleta',fondo:'#06040f',base:'#6c5cff',tension:'#dcd6ff',acento:'#ff2bd6',flash:'#ffffff'},
-  tinta:{nombre:'Tinta (blanco y negro del logo)',fondo:'#000000',base:'#e9e9e9',tension:'#ffffff',acento:'#ff3b30',flash:'#ffffff'},
-  sodio:{nombre:'Sodio',fondo:'#0b0500',base:'#ff9f1c',tension:'#ffe9c7',acento:'#ff2e3e',flash:'#fff6e8'},
-  sacro:{nombre:'Sacro (oro de vela)',fondo:'#000000',base:'#d4a24c',tension:'#fff0d0',acento:'#ffffff',flash:'#ffffff'},
-  biohazard:{nombre:'Bio-Hazard (verde mutágeno)',fondo:'#000000',base:'#39ff14',tension:'#e3ff3a',acento:'#ff1a1a',flash:'#ffffff'},
-  perreo:{nombre:'Perreo (blanco y negro)',fondo:'#000000',base:'#f2f2f2',tension:'#ffffff',acento:'#ffffff',flash:'#ffffff'},
-  glaciar:{nombre:'Glaciar',fondo:'#00070b',base:'#1ec8ff',tension:'#e6faff',acento:'#ff5a36',flash:'#ffffff'}
+  arena:{nombre:'Arena (azul, blanco y rojo)',fondo:'#01040c',base:'#2a6bff',tension:'#d8e8ff',acento:'#ff1f1f',flash:'#ffffff',prompt:'electric blue, cold white and red'},
+  ultravioleta:{nombre:'Ultravioleta',fondo:'#06040f',base:'#6c5cff',tension:'#dcd6ff',acento:'#ff2bd6',flash:'#ffffff',prompt:'ultraviolet purple, lavender and hot magenta'},
+  tinta:{nombre:'Tinta (blanco y negro del logo)',fondo:'#000000',base:'#e9e9e9',tension:'#ffffff',acento:'#ff3b30',flash:'#ffffff',prompt:'black and white with a single touch of red'},
+  sodio:{nombre:'Sodio',fondo:'#0b0500',base:'#ff9f1c',tension:'#ffe9c7',acento:'#ff2e3e',flash:'#fff6e8',prompt:'sodium orange, warm white and red'},
+  sacro:{nombre:'Sacro (oro de vela)',fondo:'#000000',base:'#d4a24c',tension:'#fff0d0',acento:'#ffffff',flash:'#ffffff',prompt:'candle gold and warm white'},
+  biohazard:{nombre:'Bio-Hazard (verde mutágeno)',fondo:'#000000',base:'#39ff14',tension:'#e3ff3a',acento:'#ff1a1a',flash:'#ffffff',prompt:'toxic neon green, acid yellow and alarm red'},
+  perreo:{nombre:'Perreo (blanco y negro)',fondo:'#000000',base:'#f2f2f2',tension:'#ffffff',acento:'#ffffff',flash:'#ffffff',prompt:'stark black and white only'},
+  glaciar:{nombre:'Glaciar',fondo:'#00070b',base:'#1ec8ff',tension:'#e6faff',acento:'#ff5a36',flash:'#ffffff',prompt:'icy cyan, white and orange red'},
+  // «extra» es un sexto color que usan algunos fondos (los tejados de la pagoda, los bloques)
+  pagoda:{nombre:'Pagoda (oro, coral y rojo fuego)',fondo:'#050709',base:'#c9ac64',tension:'#f47e78',acento:'#be3926',flash:'#f2edb8',extra:'#584e71',
+    prompt:'antique gold, light coral pink, fire brick red, muted violet and pale cream'},
+  // del Diccionario de combinaciones de color de Sanzo Wada (241 y 242), tomados a ojo de una foto
+  bermellon:{nombre:'Bermellón (Wada 241)',fondo:'#06080a',base:'#c9a85f',tension:'#f3e7c0',acento:'#e8452c',flash:'#fff6dc',extra:'#4f5b62',
+    prompt:'vermilion red orange, dark slate blue, pale cream and golden khaki'},
+  tokiwa:{nombre:'Tokiwa (Wada 242)',fondo:'#050505',base:'#2f9b3a',tension:'#e98fa3',acento:'#c4561d',flash:'#ffe3ea',extra:'#3d3d3d',
+    prompt:'soft eosine pink, evergreen tokiwa green and burnt sienna'}
 };
 const ROLES=[
   ['fondo','Fondo','El color de la pantalla'],
@@ -629,23 +677,41 @@ const ROLES=[
 const MOODS={
   lineas:{nombre:'Líneas',desc:'El primero: trazos, barras y diagonales con los ángulos del logo, en ultravioleta.',paleta:'ultravioleta',
     paneles:{n:0,hueco:0.18,modo:'continuo'},
-    fondos:{intro:[['onda']],groove:[['barras'],['diagonales']],break:[['diagonales']],subida:[['diagonales'],['diagonales','barras']],drop:[['onda','barras']]}},
+    fondos:{intro:[['onda']],groove:[['barras'],['diagonales']],break:[['diagonales']],subida:[['diagonales'],['diagonales','barras']],drop:[['onda','barras']]},
+    escena:'neon light lines and laser beams'},
   escenario:{nombre:'Escenario',desc:'Partículas, haces de luz y la pantalla roja con el logo en silueta en el drop.',paleta:'arena',
     paneles:{n:0,hueco:0.18,modo:'continuo'},
-    fondos:{intro:[['particulas']],groove:[['barras'],['haces'],['diagonales']],break:[['particulas']],subida:[['haces'],['haces','barras']],drop:[['lavado'],['onda','barras']]}},
+    fondos:{intro:[['particulas']],groove:[['barras'],['haces'],['diagonales']],break:[['particulas']],subida:[['haces'],['haces','barras']],drop:[['lavado'],['onda','barras']]},
+    escena:'a concert stage with light beams and floating particles'},
   pared:{nombre:'Pared LED',desc:'El escenario partido en 12 columnas, como una pared de pantallas.',paleta:'arena',
     paneles:{n:12,hueco:0.18,modo:'continuo'},
-    fondos:{intro:[['particulas']],groove:[['particulas'],['haces'],['barras']],break:[['particulas']],subida:[['haces'],['haces','barras']],drop:[['lavado'],['particulas','barras']]}},
+    fondos:{intro:[['particulas']],groove:[['particulas'],['haces'],['barras']],break:[['particulas']],subida:[['haces'],['haces','barras']],drop:[['lavado'],['particulas','barras']]},
+    escena:'a wall of vertical LED columns'},
   // bloques del show de Halloween: fondo negro absoluto para que respiren las luces y los láseres
   sacro:{nombre:'Sacro',desc:'Oro de vela sobre negro absoluto, haces cenitales y brasas; logo en cromo. Para los momentos pop y vocales.',paleta:'sacro',
     paneles:{n:0,hueco:0.18,modo:'continuo'},acabado:'cromo',tipografia:'monumental',negro:true,
-    fondos:{intro:[['particulas']],groove:[['haces'],['particulas']],break:[['particulas']],subida:[['haces'],['haces','particulas']],drop:[['haces','particulas']]}},
+    fondos:{intro:[['particulas']],groove:[['haces'],['particulas']],break:[['particulas']],subida:[['haces'],['haces','particulas']],drop:[['haces','particulas']]},
+    escena:'a gothic cathedral lit by candles, gold rim light'},
   biohazard:{nombre:'Bio-Hazard',desc:'Verde mutágeno, códigos de alarma que corren y franjas de peligro en rojo. Para los drops pesados.',paleta:'biohazard',
     paneles:{n:0,hueco:0.18,modo:'continuo'},acabado:'luz',tipografia:'monumental',negro:true,
-    fondos:{intro:[['codigos']],groove:[['codigos'],['barras'],['diagonales']],break:[['codigos']],subida:[['diagonales','codigos'],['diagonales','barras']],drop:[['alarma','barras'],['alarma','codigos']]}},
+    fondos:{intro:[['codigos']],groove:[['codigos'],['barras'],['diagonales']],break:[['codigos']],subida:[['diagonales','codigos'],['diagonales','barras']],drop:[['alarma','barras'],['alarma','codigos']]},
+    escena:'a containment lab with emergency lights and toxic fog'},
   perreo:{nombre:'Perreo',desc:'Blanco y negro brutal, tipografía de brocha y estrobo; logo en cromo. LA MÁQUINA.',paleta:'perreo',
     paneles:{n:0,hueco:0.18,modo:'continuo'},acabado:'cromo',tipografia:'brocha',negro:true,
-    fondos:{intro:[['barras']],groove:[['barras'],['diagonales']],break:[['particulas']],subida:[['diagonales'],['diagonales','barras']],drop:[['barras'],['onda','barras']]}}
+    fondos:{intro:[['barras']],groove:[['barras'],['diagonales']],break:[['particulas']],subida:[['diagonales'],['diagonales','barras']],drop:[['barras'],['onda','barras']]},
+    escena:'stark graphic shapes and hard strobe light'},
+  pagoda:{nombre:'Pagoda',desc:'命運, destino y fortuna: oro, coral y rojo fuego sobre negro. Pétalos de cerezo, dos pagodas cuyos tejados se encienden uno por tiempo y lluvia de pinceladas doradas.',paleta:'pagoda',
+    paneles:{n:0,hueco:0.18,modo:'continuo'},acabado:'luz',tipografia:'brocha',negro:true,
+    fondos:{intro:[['tinta']],groove:[['sakura'],['pagoda','sakura'],['tinta','sakura']],break:[['sakura']],subida:[['pagoda'],['pagoda','sakura']],drop:[['lavado'],['pagoda','sakura']]},
+    escena:'a Japanese pagoda with layered curved roofs, falling cherry blossom petals, golden brush ink texture'},
+  bermellon:{nombre:'Bermellón',desc:'Wada 241: rojo bermellón, azul Médici, crema y oro Isabella. Bloques de color planos que se cruzan como en el libro y se mueven uno por tiempo.',paleta:'bermellon',
+    paneles:{n:0,hueco:0.18,modo:'continuo'},acabado:'luz',tipografia:'monumental',negro:true,
+    fondos:{intro:[['bloques']],groove:[['bloques'],['bloques','tinta']],break:[['tinta']],subida:[['bloques','diagonales']],drop:[['lavado'],['bloques','barras']]},
+    escena:'flat overlapping color blocks like a Bauhaus poster, paper texture, graphic and minimal'},
+  tokiwa:{nombre:'Tokiwa',desc:'Wada 242: rosa eosina, verde tokiwa y siena tostada sobre negro. Bloques que se cruzan y pétalos rosas.',paleta:'tokiwa',
+    paneles:{n:0,hueco:0.18,modo:'continuo'},acabado:'luz',tipografia:'monumental',negro:true,
+    fondos:{intro:[['bloques']],groove:[['bloques'],['sakura','bloques']],break:[['sakura']],subida:[['bloques','diagonales']],drop:[['lavado'],['bloques','barras']]},
+    escena:'evergreen pine forest at night with soft pink blossoms, Japanese woodblock print style'}
 };
 const ORDEN_MOODS=Object.keys(MOODS);
 const BASE={bpm:126,fuente:'interno',compasesSubida:8,autoDrop:true,blackoutAntes:true,strobeAuto:true,strobeSeguro:true,
@@ -1199,7 +1265,76 @@ function dibujarAlarma(ctx,W,H,V,col,beat){   // franjas de peligro arriba y aba
   }
   ctx.restore();
 }
-const DIBUJO={barras:dibujarBarras,diagonales:dibujarDiagonales,onda:dibujarOndaGrande,particulas:dibujarParticulas,haces:dibujarHaces,lavado:dibujarLavado,codigos:dibujarCodigos,alarma:dibujarAlarma};
+/* fondos del mood Pagoda: pétalos de cerezo que caen, dos pagodas cuyos tejados se encienden uno por tiempo
+   (el de abajo en el 1, el de arriba en el 4, y la aguja en el 1 de cada compás) y una lluvia de pinceladas doradas */
+const PETALOS=(()=>{const r=azar(73),a=[];for(let i=0;i<170;i++)a.push({x:r(),y:r(),z:0.35+r()*0.65,giro:r()*6.28,vg:(r()-0.5)*2.4,fase:r()*6.28,claro:r()<0.3});return a;})();
+function dibujarSakura(ctx,W,H,V,col,beat){
+  const k=clamp(estado.kick),u=Math.max(1,H/900),T=estado.fase,viento=0.18+0.5*V.tension;
+  for(const p of PETALOS){
+    const y=mod(p.y+T*(0.035+0.05*p.z),1.15)-0.075,x=mod(p.x+y*viento+Math.sin(T*0.8+p.fase)*0.02,1.1)-0.05;
+    const s=(5+9*p.z)*u*(1+0.35*k*p.z),a=clamp((0.35+0.65*p.z)*V.bg*(1+0.4*k));   // el kick los abre
+    if(a<0.02)continue;
+    ctx.save();ctx.translate(x*W,y*H);ctx.rotate(p.giro+T*p.vg);
+    ctx.beginPath();ctx.moveTo(0,-s);ctx.quadraticCurveTo(s*0.95,-s*0.25,s*0.12,s);ctx.lineTo(0,s*0.72);ctx.lineTo(-s*0.12,s);   // la muesca del pétalo
+    ctx.quadraticCurveTo(-s*0.95,-s*0.25,0,-s);
+    ctx.fillStyle=rgba(p.claro?mezcla(pal.tension,pal.flash,0.55):pal.tension,a);ctx.fill();ctx.restore();
+  }
+}
+function tejado(ctx,cx,y,w,h){   // alero curvo con las puntas hacia arriba y el faldón hasta la cumbrera
+  ctx.beginPath();
+  ctx.moveTo(cx-w/2,y-h*0.55);ctx.quadraticCurveTo(cx-w*0.36,y,cx-w*0.22,y);ctx.lineTo(cx+w*0.22,y);
+  ctx.quadraticCurveTo(cx+w*0.36,y,cx+w/2,y-h*0.55);ctx.quadraticCurveTo(cx+w*0.3,y-h*0.45,cx+w*0.16,y-h);
+  ctx.lineTo(cx-w*0.16,y-h);ctx.quadraticCurveTo(cx-w*0.3,y-h*0.45,cx-w/2,y-h*0.55);ctx.closePath();
+}
+function dibujarPagoda(ctx,W,H,V,col,beat){
+  const pisos=4,k=clamp(estado.kick),drop=estado.seccion==='drop',div=estado.seccion==='subida'?division():1;
+  const toca=Math.floor(beat*div),fase=mod(beat*div,1),ex=(PALETAS[ajustes.paleta]||{}).extra;
+  const morado=ex?hexRgb(ex):mezcla(pal.base,pal.fondo,0.6),oro=pal.base,ac=pal.acento;
+  const enUno=mod(Math.floor(beat),4)===0?1-mod(beat,1):0;
+  for(const lado of[0.17,0.83]){
+    const cx=W*lado,base=H*0.94,piso=H*0.82/(pisos+0.6);
+    for(let i=0;i<pisos;i++){
+      const y=base-i*piso,w=W*0.21*(1-i*0.15),h=piso*0.62,ye=y-piso*0.35;
+      const brillo=drop?0.4+0.6*k:mod(toca,pisos)===i?1-fase:0;   // en el drop laten todos con el kick
+      ctx.fillStyle=rgba(mezcla(morado,[0,0,0],0.35),0.6*V.bg);ctx.fillRect(cx-w*0.17,ye,w*0.34,piso*0.35);   // el cuerpo del piso
+      ctx.fillStyle=rgba(ac,(0.25+0.6*brillo)*V.bg);ctx.fillRect(cx-w*0.17,y-piso*0.06,w*0.34,Math.max(1,piso*0.035));   // la baranda roja
+      tejado(ctx,cx,ye,w,h);
+      ctx.fillStyle=rgba(mezcla(morado,ac,0.65*brillo),clamp((0.65+0.35*brillo)*V.bg*1.3));ctx.fill();
+      ctx.strokeStyle=rgba(mezcla(oro,pal.flash,0.5*brillo),clamp((0.5+0.5*brillo)*V.bg*1.3));ctx.lineWidth=Math.max(1,H*0.003*(1+brillo));ctx.stroke();
+    }
+    const cima=base-(pisos-1)*piso-piso*0.35-piso*0.62;   // la aguja se enciende en el 1 de cada compás
+    ctx.strokeStyle=rgba(mezcla(oro,pal.flash,enUno),(0.35+0.6*Math.max(enUno,drop?k:0))*V.bg);ctx.lineWidth=Math.max(1,H*0.004);
+    ctx.beginPath();ctx.moveTo(cx,cima);ctx.lineTo(cx,cima-piso*0.7);ctx.stroke();
+    for(let j=1;j<=3;j++){const yy=cima-piso*0.18*j;ctx.beginPath();ctx.moveTo(cx-W*0.008,yy);ctx.lineTo(cx+W*0.008,yy);ctx.stroke();}
+  }
+}
+const PINCELADAS=(()=>{const r=azar(91),a=[];for(let i=0;i<90;i++)a.push({x:r(),y:r(),l:0.02+r()*0.07,g:0.4+r()*1.2,v:0.2+r()*0.8});return a;})();
+function dibujarTinta(ctx,W,H,V,col,beat){   // pinceladas verticales doradas que caen despacio, como la textura del papel
+  const marcado=Math.floor(beat),k=clamp(estado.kick);
+  ctx.save();ctx.lineCap='round';
+  PINCELADAS.forEach((p,i)=>{
+    const y=(mod(p.y+estado.fase*0.02*p.v,1.2)-0.1)*H,x=p.x*W,largo=p.l*H*(1+V.tension),destaca=mod(i+marcado,9)===0;   // con cada tiempo se aviva una de cada nueve
+    ctx.strokeStyle=rgba(destaca?mezcla(pal.base,pal.flash,0.4):pal.base,clamp((destaca?0.6:0.2)*V.bg*(1+0.4*k)));
+    ctx.lineWidth=Math.max(1,H*0.0025*p.g);ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+largo*0.04,y+largo);ctx.stroke();
+  });
+  ctx.restore();
+}
+// la composición del libro de Wada: cuatro rectángulos planos que se cruzan; en cada tiempo uno se desliza a otro sitio
+const BLOQUES=[[-0.02,-0.44,0.44,0.22],[-0.42,-0.2,0.46,0.2],[0.02,-0.17,0.42,0.2],[-0.22,0.04,0.44,0.22]];
+function dibujarBloques(ctx,W,H,V,col,beat){
+  const ex=(PALETAS[ajustes.paleta]||{}).extra,cols=[pal.acento,ex?hexRgb(ex):mezcla(pal.base,pal.fondo,0.4),pal.tension,pal.base];
+  const k=clamp(estado.kick),t=Math.floor(beat),f=mod(beat,1),u=Math.min(W,H*1.6)*0.62*(1+0.05*k),ir=1-Math.pow(1-Math.min(1,f*3),3);
+  const sitio=(i,n)=>(mod(n*(i+2)*37,5)-2)*0.07;   // a dónde va el bloque i la n-ésima vez que le toca
+  const tiembla=V.tension*0.012*u;
+  BLOQUES.forEach(([x,y,w,h],i)=>{
+    const n=Math.floor((t-i)/4)+1,toca=mod(t,4)===i,dx=toca?lerp(sitio(i,n-1),sitio(i,n),ir):sitio(i,n);
+    const jx=tiembla?(Math.sin(beat*31+i)*tiembla):0;
+    ctx.fillStyle=rgba(cols[i],clamp(V.bg*(0.7+0.3*(toca?1-f:0))*(1+0.3*k)));
+    ctx.fillRect(W/2+(x+dx)*u+jx,H/2+y*u,w*u,h*u);
+  });
+}
+const DIBUJO={barras:dibujarBarras,diagonales:dibujarDiagonales,onda:dibujarOndaGrande,particulas:dibujarParticulas,haces:dibujarHaces,lavado:dibujarLavado,codigos:dibujarCodigos,alarma:dibujarAlarma,
+  sakura:dibujarSakura,pagoda:dibujarPagoda,tinta:dibujarTinta,bloques:dibujarBloques};
 function patrones(beat){
   const f=ajustes.fondo.patron;
   if(f!=='auto')return DIBUJO[f]?[f]:[];
@@ -1308,9 +1443,14 @@ function agregarClips(files){
     fijarTipo(c,m?m.tipo:ES_TEMA.test(nombre)?'tema':ES_SUBIDA.test(nombre)?'subida':'loop');
     actualizarRejilla(c);
     if(m&&m.marcas&&!m.golpes)recordarClip(c);   // pasa las marcas viejas a la cuenta nueva
+    // protocolo de video: _m4s en el nombre = el momentum está en el segundo 4 (lo escribe el generador de prompts)
+    const mm=nombre.match(/_m(\d+(?:[.,]\d+)?)s(?=$|[_.\s-])/i);
+    c.mNombre=mm?parseFloat(mm[1].replace(',','.')):null;
+    if(c.mNombre!==null&&!c.marcas.length){c.marcas=[{t:c.mNombre,b:0}];c.testigo=c.testigo||'id';actualizarRejilla(c);}
     v.addEventListener('loadedmetadata',()=>{
       c.dur=isFinite(v.duration)?v.duration:0;
       if(!c.tipoFijo&&c.dur>=30){fijarTipo(c,'tema');soltarDeLoops(c);}   // los videos largos se tratan como tema
+      if(c.mNombre!==null&&!(m&&m.golpes)&&c.dur<=90)encolarAfinado(c);   // del generador de prompts: se afina solo
       pintarClips();
     });
     v.addEventListener('ended',()=>{if(clips.tema===c)terminarTema();});
@@ -1591,7 +1731,8 @@ function pintarClips(){
     const fila=document.createElement('div');fila.className='clip'+(c===clips.actual?' activo':'');fila.dataset.id=c.id;
     const n=document.createElement('span');n.className='clip-nombre';n.textContent=c.nombre;n.title=c.nombre;
     const d=document.createElement('code');d.textContent=c.error?'no compatible':c.dur?minSeg(c.dur):'…';
-    if(c.marcas.length){const g=document.createElement('span');g.className='clip-golpes';g.textContent=' · '+c.marcas.length+(c.marcas.length===1?' golpe':' golpes');d.appendChild(g);}
+    if(c.marcas.length||c.afinando!=null){const g=document.createElement('span');g.className='clip-golpes';
+      g.textContent=c.afinando!=null?' · afinando '+Math.round(c.afinando*100)+' %':' · '+c.marcas.length+(c.marcas.length===1?' golpe':' golpes');d.appendChild(g);}
     const ctrl=document.createElement('div');ctrl.className='clip-ctrl';
     const seg=document.createElement('div');seg.className='seg';seg.setAttribute('role','group');seg.setAttribute('aria-label','Tipo de clip');
     for(const[t,et]of[['loop','Loop'],['tema','Tema'],['subida','Subida']]){
@@ -1678,7 +1819,7 @@ function sugerirGolpe(){   // el golpe más cercano según la rejilla actual, o 
 function textoNum(){const n=parseInt($('#golpesNum').value,10);$('#golpesNumInfo').textContent=!isFinite(n)?'':n===0?'no hay golpe 0: antes del momentum van −1, −2…':'= '+textoGolpe(bDeN(n));}
 /* detección por la luz: el momentum es el golpe de luz más fuerte del video y el testigo, un puntito en una
    esquina que destella en cada tiempo. Se mide el brillo de cada cuadro (toda la imagen y cada esquina) */
-async function analizarLuz(c,avance){
+async function analizarLuz(c,avance,parar){
   const v=document.createElement('video');v.muted=true;v.preload='auto';v.src=c.video.src;
   await new Promise((ok,mal)=>{v.addEventListener('loadeddata',ok,{once:true});v.addEventListener('error',mal,{once:true});});
   const f=c.fps,dur=c.dur||v.duration,N=Math.max(2,Math.floor(dur*f)),W=160,H=Math.max(8,Math.round(160*v.videoHeight/v.videoWidth));
@@ -1686,7 +1827,7 @@ async function analizarLuz(c,avance){
   const ew=Math.max(1,Math.round(W*TESTIGO_W)),eh=Math.max(1,Math.round(H*TESTIGO_H));
   const luz=new Float32Array(N),esq={si:new Float32Array(N),sd:new Float32Array(N),ii:new Float32Array(N),id:new Float32Array(N)};
   let n=0;
-  for(;n<N&&!golpes.cancelar;n++){
+  for(;n<N&&!parar();n++){
     v.currentTime=(n+0.5)/f;await new Promise(ok=>v.addEventListener('seeked',ok,{once:true}));
     g.drawImage(v,0,0,W,H);const d=g.getImageData(0,0,W,H).data;
     let tot=0,si=0,sd=0,ii=0,id=0;
@@ -1718,13 +1859,47 @@ function buscarTestigo(esq,f){   // la esquina con destellos regulares, y cada c
   }
   return mejor;
 }
-function buscarMomentum(luz){   // el cuadro en que arranca el golpe de luz más fuerte
-  const N=luz.length,ventana=8;let mejor=-1,sube=0;
-  for(let n=1;n<N;n++){let mn=luz[n-1];for(let j=Math.max(0,n-ventana);j<n;j++)mn=Math.min(mn,luz[j]);if(luz[n]-mn>sube){sube=luz[n]-mn;mejor=n;}}
+function buscarMomentum(luz,desde=1,hasta=luz.length-1){   // el cuadro en que arranca el golpe de luz más fuerte
+  const ventana=8;let mejor=-1,sube=0;
+  for(let n=Math.max(1,desde);n<=hasta;n++){let mn=luz[n-1];for(let j=Math.max(0,n-ventana);j<n;j++)mn=Math.min(mn,luz[j]);if(luz[n]-mn>sube){sube=luz[n]-mn;mejor=n;}}
   if(mejor<0||sube<0.12)return null;
   let base=luz[mejor];for(let j=Math.max(0,mejor-ventana);j<mejor;j++)base=Math.min(base,luz[j]);
   let n=mejor;while(n>1&&luz[n-1]-base>=sube*0.5)n--;
   return{n,sube};
+}
+const ESQUINA_TXT={si:'↖ arriba a la izquierda',sd:'↗ arriba a la derecha',ii:'↙ abajo a la izquierda',id:'↘ abajo a la derecha'};
+// de la luz analizada a marcas de golpe. esperado: el segundo del momentum que dice el nombre del archivo, o null
+function golpesDeLuz(c,r,esperado){
+  const tes=buscarTestigo(r.esq,r.f);let mom=null;
+  if(c.tipo==='subida'){   // en una subida el momentum es el final en blanco: el cuadro más brillante (o el último destello)
+    let nm=0;for(let n=1;n<r.N;n++)if(r.luz[n]>r.luz[nm])nm=n;
+    if(r.luz[nm]>0.45){let n=nm;while(n>1&&r.luz[n-1]>=r.luz[nm]*0.9)n--;mom={n,sube:r.luz[nm]};}
+    else mom=tes?{n:tes.on[tes.on.length-1],sube:0}:null;
+  }else if(esperado!=null){   // se busca cerca de donde dice el nombre: el golpe de luz, el destello más cercano o ese segundo
+    const n0=Math.round(esperado*r.f),v=Math.round(0.75*r.f);
+    mom=buscarMomentum(r.luz,n0-v,Math.min(r.N-1,n0+v));
+    if(!mom&&tes){let mejor=null;for(const o of tes.on)if(Math.abs(o-n0)<=v&&(mejor===null||Math.abs(o-n0)<Math.abs(mejor-n0)))mejor=o;if(mejor!==null)mom={n:mejor,sube:0};}
+    if(!mom)mom={n:clamp(n0,0,r.N-1),sube:0};
+  }else mom=buscarMomentum(r.luz);
+  const res={luz:{luz:r.luz,esq:tes?r.esq[tes.esquina]:null,f:r.f},marcas:null,testigo:null,modo:null};
+  if(!tes&&!mom){res.msg='No encontré un golpe de luz claro ni un testigo que destelle: marca a mano (la curva de luz de la línea de tiempo ayuda).';return res;}
+  const m=[];
+  if(tes){
+    const n0=mom?mom.n:tes.on[0];   // sin golpe de luz se numera desde el primer destello
+    const porB={};
+    for(const o of tes.on){const b=Math.round((o-n0)/tes.P);if(b!==0&&(!porB[b]||Math.abs(o-n0-b*tes.P)<Math.abs(porB[b]-n0-b*tes.P)))porB[b]=o;}
+    m.push({t:+(n0/r.f).toFixed(4),b:0});for(const b in porB)m.push({t:+(porB[b]/r.f).toFixed(4),b:+b});
+    m.sort((p,q)=>p.b-q.b);
+    // si las marcas casi caen en una recta, tempo fijo; si el video acelera o frena, warp
+    const rc=rectaDe(m),err=Math.max(...m.map(x=>Math.abs(x.t-(rc.t0+rc.s*x.b))))*r.f;
+    res.testigo=tes.esquina;res.modo=err<=2?'fijo':'warp';
+    res.msg=(mom?'Momentum en '+segTxt(n0/r.f):'No vi un golpe de luz: numeré desde el primer destello (si el momentum es otro, ponlo y se renumera todo)')
+      +'. El testigo ('+ESQUINA_TXT[tes.esquina]+') marcó '+(m.length-1)+' golpes más · tempo '+(res.modo==='fijo'?'fijo':'warp: el video cambia de velocidad')+'. Se tapará en el show.';
+  }else{
+    m.push({t:+(mom.n/r.f).toFixed(4),b:0});
+    res.msg='Momentum en '+segTxt(m[0].t)+'. No hay testigo: marca otro golpe para darle el tempo.';
+  }
+  res.marcas=m;return res;
 }
 async function detectarPorLuz(){
   const c=golpes.c,bt=$('#golpesDetectar');if(!c)return;
@@ -1732,42 +1907,72 @@ async function detectarPorLuz(){
   if(c.marcas.length&&!confirm('Lo detectado sustituye tus '+c.marcas.length+' marcas. ¿Sigo?'))return;
   golpes.analizando=true;golpes.cancelar=false;
   let r=null;
-  try{r=await analizarLuz(c,x=>{bt.textContent='Analizando '+Math.round(x*100)+' % · parar';});}
+  try{r=await analizarLuz(c,x=>{bt.textContent='Analizando '+Math.round(x*100)+' % · parar';},()=>golpes.cancelar);}
   catch(e){aviso('No pude leer este video cuadro a cuadro.');}
   golpes.analizando=false;bt.textContent='Detectar por la luz';
   if(!r||golpes.c!==c){if(golpes.cancelar)aviso('Detección parada');return;}
-  const tes=buscarTestigo(r.esq,r.f);
-  let mom=buscarMomentum(r.luz);
-  if(c.tipo==='subida'){   // en una subida el momentum es el final en blanco: el cuadro más brillante (o el último destello)
-    let nm=0;for(let n=1;n<r.N;n++)if(r.luz[n]>r.luz[nm])nm=n;
-    if(r.luz[nm]>0.45){let n=nm;while(n>1&&r.luz[n-1]>=r.luz[nm]*0.9)n--;mom={n,sube:r.luz[nm]};}
-    else mom=tes?{n:tes.on[tes.on.length-1],sube:0}:null;
-  }
-  c.luz={luz:r.luz,esq:tes?r.esq[tes.esquina]:null,f:r.f};
-  if(!tes&&!mom){aviso('No encontré un golpe de luz claro ni un testigo que destelle: marca a mano (la curva de luz de la línea de tiempo ayuda).');pintarGolpes();return;}
-  const m=[];let msg;
-  if(tes){
-    const n0=mom?mom.n:tes.on[0];   // sin golpe de luz se numera desde el primer destello
-    const porB={};
-    for(const o of tes.on){const b=Math.round((o-n0)/tes.P);if(b!==0&&(!porB[b]||Math.abs(o-n0-b*tes.P)<Math.abs(porB[b]-n0-b*tes.P)))porB[b]=o;}
-    m.push({t:+(n0/r.f).toFixed(4),b:0});for(const b in porB)m.push({t:+(porB[b]/r.f).toFixed(4),b:+b});
-    m.sort((p,q)=>p.b-q.b);
-    c.testigo=tes.esquina;
-    // si las marcas casi caen en una recta, tempo fijo; si el video acelera o frena, warp
-    const rc=rectaDe(m),err=Math.max(...m.map(x=>Math.abs(x.t-(rc.t0+rc.s*x.b))))*r.f;
-    c.modo=err<=2?'fijo':'warp';
-    msg=(mom?'Momentum en el golpe de luz de '+segTxt(n0/r.f):'No vi un golpe de luz: numeré desde el primer destello (si el momentum es otro, ponlo y se renumera todo)')
-      +'. El testigo ('+$('#golpesTestigo').querySelector('option[value="'+tes.esquina+'"]').textContent+') marcó '+(m.length-1)+' golpes más'
-      +' · tempo '+(c.modo==='fijo'?'fijo':'warp: el video cambia de velocidad')+'. Se tapará en el show.';
-  }else{
-    const t=+(mom.n/r.f).toFixed(4);
-    $('#golpesVideo').currentTime=(mom.n+0.5)/r.f;await new Promise(ok=>$('#golpesVideo').addEventListener('seeked',ok,{once:true}));
-    m.push({t,b:0});
-    msg='Momentum en el golpe de luz de '+segTxt(t)+'. No hay testigo: marca otro golpe para darle el tempo.';
-  }
+  const res=golpesDeLuz(c,r,c.mNombre);
+  c.luz=res.luz;
+  if(!res.marcas){aviso(res.msg);pintarGolpes();return;}
+  if(res.testigo)c.testigo=res.testigo;if(res.modo)c.modo=res.modo;
   c.marcas=[];   // la detección parte de cero
-  fijarMarcas(c,m,msg);
-  irA(m[0].t);
+  fijarMarcas(c,res.marcas,res.msg);
+  irA(res.marcas.find(x=>x.b===0).t);
+}
+/* generador de prompts: rol + mood + idea → el prompt con las señales del protocolo y el nombre del archivo.
+   Siempre a 120 BPM: dos destellos del testigo por segundo, un compás cada 2 s y 4 compases en una toma de 8 s */
+const TESTIGO_PROMPT='RHYTHM MARKER: a tiny white dot in the bottom-right corner, right at the edge, flashes briefly twice per second (on every beat at 120 BPM) and stays dark between flashes. It never moves, it is the only thing in that corner, and nothing else flashes like it.';
+function armarPrompt(rol,moodId,idea,previos){
+  const mood=MOODS[moodId]||MOODS.escenario,pal=PALETAS[mood.paleta]||{},escena=(idea||'').trim()||mood.escena||'an abstract light sculpture';
+  const lineas=['Ultra wide 2:1 cinematic shot, pure black background, no text, no logos, no camera cuts.',
+    'Color palette: '+(pal.prompt||'deep black with bright accents')+'.',TESTIGO_PROMPT];
+  const calma='Steady light level all the way through: no sudden flashes.';
+  let m=0,compases=4;
+  if(rol==='intro')lineas.push(calma,'[00:00-00:02] Pure darkness, a faint glow barely visible.','[00:02-00:04] The light slowly reveals '+escena+'.',
+    '[00:04-00:06] Fully visible, slow drifting motion, fog.','[00:06-00:08] The light dims back toward darkness, ending like the first frame.');
+  else if(rol==='groove')lineas.push(calma,'[00:00-00:08] Continuous steady motion through '+escena+', constant speed, no climax; the last moment matches the first for a seamless loop.');
+  else if(rol==='break')lineas.push(calma,'[00:00-00:08] '+escena+', almost still, deep black, a single soft side light, slow fog, empty space in the center of the frame.');
+  else if(rol==='subida'){m=8;lineas.push('The light grows until the very last frame is pure blinding white: the brightest moment of the video.',
+    '[00:00-00:02] Calm and almost still: '+escena+', a single light source.','[00:02-00:04] The camera starts moving forward, particles rising.',
+    '[00:04-00:06] Faster, the light flickers, wind.','[00:06-00:08] Rushing forward, the frame overexposes to pure white.');}
+  else{   // coro: previos que tensan, el momentum con el golpe de luz y la energía sostenida
+    m=previos*0.5;compases=Math.round((8-m)/2);
+    const t=x=>'00:0'+x,impacto='MOMENTUM: a sudden burst of blinding white light floods the frame, the brightest moment of the video, '+escena+' revealed in full.';
+    if(m>0)lineas.push('Low light before the momentum.','['+t(0)+'-'+t(m)+'] Low light, tension building toward the center: '+escena+', slow push-in.','['+t(m)+'-'+t(m+1)+'] '+impacto,'['+t(m+1)+'-00:08] Sustained energy, wide slow movement, strong color.');
+    else lineas.push('['+t(0)+'-'+t(1)+'] '+impacto,'['+t(1)+'-00:08] Sustained energy, wide slow movement, strong color.');
+  }
+  // el nombre: rol, mood, unas palabras de la idea y las señales (sin palabras que el motor confunda con otro rol)
+  const limpio=(idea||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().split(/[^a-z0-9]+/)
+    .filter(w=>w&&!/intro|groove|loop|break|subida|build|riser|coro|chorus|drop|estribillo|tema|song|bpm/.test(w)).slice(0,3).join('_')||'clip';
+  return{prompt:lineas.join('\n'),nombre:rol+'_'+moodId+'_'+limpio+'_120bpm_'+compases+'c_m'+String(m).replace('.',',')+'s.mp4'};
+}
+function pintarPrompt(){
+  const rol=$('#selPromptRol').value,r=armarPrompt(rol,$('#selPromptMood').value,$('#txtPromptIdea').value,+$('#selPromptPrevios').value);
+  $('#campoPrevios').hidden=rol!=='coro';$('#txtPrompt').value=r.prompt;$('#txtPromptNombre').textContent=r.nombre;
+}
+async function copiar(texto,que){
+  try{await navigator.clipboard.writeText(texto);aviso(que+' copiado');}
+  catch(e){aviso('No pude copiar: selecciónalo y copia con Cmd+C');}
+}
+
+/* afinado automático: los clips que vienen del generador de prompts (con _m4s en el nombre) se analizan solos al
+   cargarlos, de uno en uno, y quedan con sus golpes marcados sin abrir el editor */
+const afinado={cola:[],ocupado:false};
+function encolarAfinado(c){if(!afinado.cola.includes(c))afinado.cola.push(c);siguienteAfinado();}
+async function siguienteAfinado(){
+  if(afinado.ocupado)return;
+  const c=afinado.cola.shift();if(!c)return;
+  if(c.error||!clips.lista.includes(c)){siguienteAfinado();return;}
+  afinado.ocupado=true;c.afinando=0;pintarClips();
+  let r=null;
+  try{r=await analizarLuz(c,x=>{c.afinando=x;const e=document.querySelector('#listaClips .clip[data-id="'+c.id+'"] .clip-golpes');if(e)e.textContent=' · afinando '+Math.round(x*100)+' %';},()=>!clips.lista.includes(c));}
+  catch(e){}
+  c.afinando=null;afinado.ocupado=false;
+  if(r){
+    const res=golpesDeLuz(c,r,c.mNombre);c.luz=res.luz;
+    if(res.marcas){c.marcas=res.marcas;if(res.testigo)c.testigo=res.testigo;if(res.modo)c.modo=res.modo;actualizarRejilla(c);recordarClip(c);}
+  }
+  pintarClips();siguienteAfinado();
 }
 const tAhora=()=>+(cuadroDe($('#golpesVideo').currentTime)/golpes.c.fps).toFixed(4);
 const segTxt=t=>t.toFixed(3).replace('.',',')+' s';
@@ -1988,13 +2193,14 @@ async function cargarFuenteArchivo(f){
     aviso('Tipografía cargada: '+f.name+'. Ya se usa en las frases y en el texto.');
   }catch(err){aviso('No pude leer esa tipografía. Usa un archivo TTF, OTF, WOFF o WOFF2.');}
 }
+const CJK=', "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", serif';   // para frases en kanji, como 命運
 function fuenteFrase(){
   const t=ajustes.tipos.frases;
-  if(t==='propia'&&fuentePropia.cargada)return{peso:'400',familia:'"PR Propia", "PR Monumental", Impact, sans-serif'};
+  if(t==='propia'&&fuentePropia.cargada)return{peso:'400',familia:'"PR Propia", "PR Monumental", Impact, sans-serif'+CJK};
   const cual=t==='monumental'||t==='brocha'?t:(MOODS[ajustes.mood]||{}).tipografia;
   return cual==='brocha'
-    ?{peso:'400',familia:'"PR Brocha", "Permanent Marker", "Marker Felt", cursive'}
-    :{peso:'900',familia:'"PR Monumental", "Big Shoulders Display", Impact, "Arial Narrow", sans-serif'};
+    ?{peso:'400',familia:'"PR Brocha", "Permanent Marker", "Marker Felt", cursive'+CJK}
+    :{peso:'900',familia:'"PR Monumental", "Big Shoulders Display", Impact, "Arial Narrow", sans-serif'+CJK};
 }
 const fuenteTexto=(peso,tam)=>ajustes.tipos.texto==='propia'&&fuentePropia.cargada
   ?'400 '+tam+'px "PR Propia", Barlow, system-ui, sans-serif'
@@ -2478,6 +2684,12 @@ function enlazar(){
   cambio('#chipAuto',()=>fijarAuto(!estado.auto),'click');
   cambio('#selFuente',e=>fijarFuente(e.target.value));
   cambio('#chkPausaSilencio',e=>{ajustes.pausaSilencio=e.target.checked;guardar();});
+  {const sel=$('#selPromptMood');for(const id of ORDEN_MOODS){const o=document.createElement('option');o.value=id;o.textContent=MOODS[id].nombre;sel.appendChild(o);}
+   sel.value=ajustes.mood;
+   for(const id of['#selPromptRol','#selPromptMood','#selPromptPrevios','#txtPromptIdea'])$(id).addEventListener('input',pintarPrompt);
+   $('#btnCopiarPrompt').addEventListener('click',()=>copiar($('#txtPrompt').value,'Prompt'));
+   $('#btnCopiarNombre').addEventListener('click',()=>copiar($('#txtPromptNombre').textContent,'Nombre'));
+   pintarPrompt();}
   cambio('#numBpm',e=>{const v=parseFloat(e.target.value);if(!isFinite(v))return;if(reloj.midiActivo(performance.now())){aviso('Con MIDI clock el tempo lo marca Traktor.');return;}reloj.bpm=clamp(v,60,200);ajustes.bpm=reloj.bpm;guardar();});
   cambio('#selSubida',e=>{ajustes.compasesSubida=+e.target.value;guardar();});
   cambio('#chkAutoDrop',e=>{ajustes.autoDrop=e.target.checked;guardar();});
@@ -2792,7 +3004,7 @@ if(document.fonts&&document.fonts.ready)document.fonts.ready.then(dibujarMarca);
 if(reloj.fuente==='midi')activarMidi();
 programar();
 
-window.__motorPR={estado,reloj,audio,ajustes,pausa,entradaControl,leerMandos,vigilarPausa,midi,vis,det,clips,golpes,abrirGolpes,tDeGolpe,golpeDeT,LOGO,dibujarLogo,pedirSeccion,aplicarSeccion,fijarTension,agregarClips,lanzarTema,pararTema,moverTema,pedirMood,aplicarMood,lanzarFrase,usarLogoSvg,fuentePropia};
+window.__motorPR={armarPrompt,estado,reloj,audio,ajustes,pausa,entradaControl,leerMandos,vigilarPausa,midi,vis,det,clips,golpes,abrirGolpes,tDeGolpe,golpeDeT,LOGO,dibujarLogo,pedirSeccion,aplicarSeccion,fijarTension,agregarClips,lanzarTema,pararTema,moverTema,pedirMood,aplicarMood,lanzarFrase,usarLogoSvg,fuentePropia};
 })();
 </script>
 </body>

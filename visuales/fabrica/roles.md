@@ -27,7 +27,7 @@ Aparte están los **temas**: un video para una canción entera, de principio a f
 
 ## El prompt de cada rol
 
-Primero la [base de prompt](base-de-prompt.md) (el testigo del ritmo y la luz del momentum), luego una línea con el plano, el sujeto y la luz, y después los bloques.
+Primero la [base de prompt](base-de-prompt.md) (el testigo del ritmo y la luz del momentum), luego una línea con el plano, el sujeto y la luz, y después los bloques. El grupo **Prompt para video** del motor arma todo esto solo, con los colores del mood, y te da el nombre del archivo.
 
 **Intro**: aparecer.
 

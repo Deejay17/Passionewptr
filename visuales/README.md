@@ -28,8 +28,11 @@ Un **mood** es el look completo: paleta, qué fondo sale en cada sección y pane
 | **Sacro** | Oro de vela sobre negro absoluto, haces cenitales y brasas; logo en cromo. Momentos pop y vocales |
 | **Bio-Hazard** | Verde mutágeno, códigos de alarma que corren y franjas de peligro rojas en el drop. Drops pesados |
 | **Perreo** | Blanco y negro brutal, frases en tipografía de brocha y estrobo; logo en cromo |
+| **Pagoda** | 命運, destino y fortuna: oro, coral y rojo fuego sobre negro. Pétalos de cerezo que caen, dos pagodas cuyos tejados se encienden uno por tiempo (la aguja en el 1 de cada compás), lluvia de pinceladas doradas y la pantalla roja en el drop |
+| **Bermellón** | Combinación 241 del diccionario de Sanzo Wada: rojo bermellón, azul Médici, crema y oro Isabella en bloques de color planos que se cruzan y se mueven uno por tiempo |
+| **Tokiwa** | Combinación 242 de Wada: rosa eosina, verde tokiwa y siena tostada; bloques y pétalos rosas |
 
-Sacro, Bio-Hazard y Perreo son los bloques del show de Halloween y mantienen el **fondo negro absoluto** para que respiren las luces y los láseres.
+Sacro, Bio-Hazard y Perreo son los bloques del show de Halloween. Ellos, Pagoda, Bermellón y Tokiwa mantienen el **fondo negro absoluto** para que respiren las luces y los láseres. Las frases en kanji (por ejemplo 命運) salen con la tipografía japonesa del sistema.
 
 - Se cambia con `M` (o con los botones bajo las secciones) y entra en el siguiente tiempo.
 - Cada mood recuerda tus cambios de paleta y paneles. **Restablecer el mood actual** vuelve al original.
@@ -160,6 +163,8 @@ for f in *.mov; do ffmpeg -i "$f" -c:v libx264 -crf 18 -pix_fmt yuv420p -an "${f
 ```
 
 ## Cómo producir los videos para que vayan sincronizados
+
+**Lo más rápido: el grupo *Prompt para video*.** Eliges rol y mood y escribes qué se ve; te da el prompt completo con las señales que el motor sabe leer y el **nombre** con el que guardar el video (por ejemplo `coro_pagoda_templo_120bpm_2c_m4s.mp4`). Al cargarlo, el motor sabe que es un coro a 120 BPM con el momentum en el segundo 4, lo analiza solo y marca sus golpes sin abrir el editor (en la lista se ve «afinando…» y luego «16 golpes»). El protocolo completo está en [`fabrica/base-de-prompt.md`](fabrica/base-de-prompt.md).
 
 La guía completa, el script `conformar.sh` y los guiones del show están en [`fabrica/`](fabrica/README.md). Cada video se hace para un rol (intro, groove, break, subida o coro) que va en su nombre y el motor lo coloca solo: [`fabrica/roles.md`](fabrica/roles.md).
 

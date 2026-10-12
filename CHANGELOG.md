@@ -4,6 +4,12 @@ Qué cambió en cada commit, de lo más nuevo a lo más viejo. Cada entrada llev
 
 ## 2026-10-12
 
+### Protocolo de video y tres moods nuevos [sin publicar]
+- **Prompt para video** (grupo nuevo del motor): rol + mood + qué se ve → el prompt a 120 BPM con el testigo, la luz del momentum, los bloques por compás y los colores del mood en palabras, y el nombre con el que guardar el video (`coro_pagoda_templo_120bpm_2c_m4s.mp4`).
+- **Afinado automático**: un video con `_m4s` en el nombre entra con su momentum puesto y el motor lo analiza solo al cargarlo (testigo, golpes, tempo fijo o warp), sin abrir *Golpes*.
+- **Moods Pagoda, Bermellón y Tokiwa**: la paleta de la pagoda (oro, coral, rojo fuego y violeta) y las combinaciones 241 y 242 de Sanzo Wada. Fondos nuevos: pétalos de cerezo, pagodas cuyos tejados se encienden uno por tiempo, lluvia de pinceladas doradas y bloques de color que se mueven al golpe.
+- Las frases en kanji salen con la tipografía japonesa del sistema.
+
 ### Pausa con Traktor y joystick [4c28423]
 - **Pausa**: la imagen se queda quieta cuando Traktor se para y, al volver, sigue desde el mismo golpe y en la fase de su reloj, así la frase no se descuadra. Entra con `Q`, con el silencio del audio (más de 1,5 s), con el Play de los decks mapeado (*Deck A–D en play*) o con el Stop del MIDI clock.
 - **Joystick o mando USB**: se aprende como un control MIDI; botones para disparos y ejes como perilla o como botón empujándolos a un lado.

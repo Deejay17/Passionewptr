@@ -1,4 +1,33 @@
-# Base de prompt
+# Base de prompt y protocolo de video
+
+## El protocolo, en corto
+
+Los visuales son de dos clases: los **procedurales**, que el motor dibuja en vivo y ya van al golpe, y los **videos**, que hay que encajar. Para que cualquier video encaje solo, en cualquier canción, todos se piden igual y traen cuatro señales:
+
+| Señal | Qué es | Quién la lee |
+|---|---|---|
+| **Rejilla de 120 BPM** | Un compás cada 2 s, bloques de 2 s en el prompt, tomas de 8 s = 4 compases | El motor lo lleva al BPM real de la canción (95, 100, 128…) |
+| **Testigo** | Un puntito abajo a la derecha que destella en cada tiempo | El motor marca un golpe en cada destello y lo tapa en el show |
+| **Luz del momentum** | El instante más luminoso del video es el que cae en el 1 (en una subida, el blanco final) | El motor pone ahí el momentum |
+| **Nombre del archivo** | `rol_mood_idea_120bpm_4c_m4s.mp4`: rol, BPM, compases y el segundo del momentum (`m4s`) | El motor lo coloca en su sección, lo amarra y busca la luz cerca de ese segundo |
+
+El **generador** está en el motor (grupo *Prompt para video*): rol + mood + qué se ve → el prompt y el nombre. Los colores salen de la paleta del mood, con palabras, y si no escribes nada usa la escena del mood (la pagoda, la catedral, los bloques de Wada…).
+
+Al **cargar** un video con ese nombre, el motor ya sabe dónde está el momentum y lo afina solo con la luz: no hay que abrir *Golpes*. Si el generador no respetó el testigo, el momentum se queda donde dice el nombre y el tempo a 120, que suele bastar.
+
+Qué hace el generador con cada rol (toma de 8 s):
+
+| Rol | Estructura | Momentum (`m`) | Nombre |
+|---|---|---|---|
+| Intro | Aparece de la oscuridad y vuelve | 0 s | `intro_…_120bpm_4c_m0s` |
+| Groove | Movimiento constante, sin clímax | 0 s | `groove_…_120bpm_4c_m0s` |
+| Break | Casi quieto, el centro vacío | 0 s | `break_…_120bpm_4c_m0s` |
+| Subida | Acelera y termina en blanco | 8 s (el blanco final) | `subida_…_120bpm_4c_m8s` |
+| Coro | 8, 4 o 0 tiempos de previos, golpe de luz y energía sostenida | 4, 2 o 0 s | `coro_…_120bpm_2c_m4s` |
+
+Si unes tomas o pasas el video por `conformar.sh`, conserva el final del nombre (`_120bpm_…_m…s`) o vuelve a marcar el momentum en *Golpes*.
+
+## La base, paso a paso
 
 Lo que va en **todos** los prompts de video, para que después el motor pueda encajar el clip solo. Se pega la base y debajo los bloques del rol (los de [`roles.md`](roles.md)).
 
