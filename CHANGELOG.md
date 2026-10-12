@@ -4,7 +4,7 @@ Qué cambió en cada commit, de lo más nuevo a lo más viejo. Cada entrada llev
 
 ## 2026-10-12
 
-### Base de prompt, detección por la luz y tempo fijo [sin publicar]
+### Base de prompt, detección por la luz y tempo fijo [ba76edf]
 - [Base de prompt](visuales/fabrica/base-de-prompt.md) para todos los videos: un **testigo** (puntito que destella en cada tiempo en una esquina) y el momentum como el instante más luminoso.
 - **Detectar por la luz** en *Golpes*: encuentra el momentum en el golpe de luz más fuerte y, si hay testigo, marca un golpe en cada destello. La línea de tiempo muestra la curva de luz. La esquina del testigo se tapa con negro en el show y con `conformar.sh --tapar`.
 - **Tempo fijo** (el normal): una sola velocidad que pasa por todas las marcas, para que los errores de un cuadro no hagan acelerar y frenar el video; **Warp** queda para videos que cambian de velocidad.
