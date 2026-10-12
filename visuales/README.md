@@ -89,9 +89,16 @@ En *Salida → Formato de la pantalla* elige **2:1 · pantalla de 6 × 3 m**: el
 
 Pulsa **Elegir carpeta** (o **Añadir clips**, o arrástralos sobre la página). Hay que volver a cargarlos cada vez que abres el motor; el BPM, el tipo y las secciones de cada clip sí se recuerdan por nombre.
 
-Hay dos tipos de clip:
+Hay tres tipos de clip:
 - **Loop**: corto, rota por sección y corta al compás. Es el relleno.
 - **Tema**: un video largo hecho para una canción. Se lanza en el 1, suena entero sin cortes y al terminar vuelve el relleno. Los videos de más de 30 s, o con `tema` en el nombre, entran como tema.
+- **Subida**: un video hecho para la subida. La recorre entera y su último cuadro cae justo en el drop. Entran así los que llevan `subida`, `build` o `riser` en el nombre.
+
+### Subidas que terminan en el drop
+
+Un clip de tipo Subida se reparte a lo largo de los compases de la subida (4, 8 o 16) a cualquier BPM: lo que pasa a la mitad del video pasa a la mitad de la subida. Mientras suena no hay cortes, y por encima siguen el blur, el glitch del redoble, el strobe y el blackout del último tiempo. En el drop entra el clip del coro desde su primer cuadro, sin retraso. En las pruebas, el video se mantuvo a 10–20 ms de su sitio de media y el coro entró en su primer cuadro en el 1 del drop.
+
+Si hay varios clips de subida, se turnan. Para que el video no vaya a cámara lenta, conviene que dure lo mismo que la subida: [`fabrica/subida-y-coro.md`](fabrica/subida-y-coro.md) explica cómo escribir el prompt por compases y cómo encajarlo con `conformar.sh --entero`.
 
 ### Temas sincronizados
 
@@ -107,12 +114,13 @@ Para lanzarlo en el momento justo:
 
 ### El logo sobre los videos
 
-Cada clip decide qué hace el logo encima: **encima**, **en la esquina** (pequeño, abajo a la derecha) u **oculto**. Los temas, que son tus videos grandes, vienen con el logo oculto y los loops con el logo encima. El cambio se hace con un fundido suave y se recuerda por nombre de archivo. En los whiteouts el logo vuelve a aparecer en silueta. La tecla `O` apaga o enciende el logo al instante.
+Cada clip decide qué hace el logo encima: **encima**, **en la esquina** (pequeño, abajo a la derecha) u **oculto**. Los temas y las subidas, que son tus videos grandes, vienen con el logo oculto y los loops con el logo encima. El cambio se hace con un fundido suave y se recuerda por nombre de archivo. En los whiteouts el logo vuelve a aparecer en silueta. La tecla `O` apaga o enciende el logo al instante.
 
 ### Loops
 
-- Si el nombre del archivo incluye `intro`, `groove`, `break`, `subida` (o `build`) o `drop`, el clip solo se usa en esa sección. Si no, vale para todas. También se cambia a mano con los botones I G B S D de cada clip.
-- Los cortes caen siempre en el compás: cada 4, 8 o 16 compases (eliges tú). En la subida se aceleran solos (cada 2 compases y luego cada compás) y el drop siempre corta a un clip nuevo. Cada corte arranca en un punto al azar del clip para que no se repita igual.
+- Si el nombre del archivo incluye `intro`, `groove`, `break` o `drop` (también `coro` o `chorus`), el clip solo se usa en esa sección. Si no, vale para todas. También se cambia a mano con los botones I G B S D de cada clip. Un archivo con `subida` en el nombre entra como tipo Subida; si lo quieres como loop que rota en la subida, cámbialo a Loop.
+- Los cortes caen siempre en el compás: cada 4, 8 o 16 compases (eliges tú). En la subida se aceleran solos (cada 2 compases y luego cada compás) si no hay un clip de tipo Subida, y el drop siempre corta a un clip nuevo.
+- Al empezar una sección el clip entra desde su primer cuadro (ahí va el impacto del coro); los cortes dentro de la sección entran en un compás al azar para que no se repita igual.
 - El clip siguiente queda preparado antes del corte. En la subida se deja listo el del drop, así el corte del drop es inmediato y sin cuadros negros.
 - **Teñir con la paleta** pasa el clip a blanco y negro y lo colorea con el color de la sección (base, tensión o acento). Así cualquier material mantiene tu identidad.
 - **Velocidad según la sección**: el clip va más lento en el break, se acelera con la tensión de la subida y un poco más rápido en el drop.
@@ -183,6 +191,7 @@ Todo está en `motor-visual-pr.html`, en bloques comentados:
 | Cuándo cortan los clips | `function tocaCorte` |
 | El tinte de los clips | `function dibujarClip` |
 | Cómo se amarra un clip al tempo | `function amarrar` |
+| Cómo recorre la subida un clip de subida | `function amarrarSubida` |
 | Cuándo entra un tema | `function lanzarTema` |
 | Partículas, haces y lavado | `function dibujarParticulas`, `dibujarHaces`, `dibujarLavado` |
 | Los paneles LED | `function componerPaneles` |

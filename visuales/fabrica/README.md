@@ -9,7 +9,9 @@ guion  →  producción (IA, 3D o grabación)  →  conformar.sh  →  motor / R
 1. **Guion.** Una ficha por clip con BPM, compases, sección, paleta y qué pasa en cada compás. Plantilla en [`guiones/plantilla.md`](guiones/plantilla.md); los del show del 31 de octubre están en [`guiones/`](guiones/).
 2. **Producción.** Se genera el material por la ruta que mejor le vaya a cada clip (ver abajo). No hace falta que salga exacto: el siguiente paso lo encaja.
 3. **Conformar.** `conformar.sh` lo deja en N compases exactos del BPM, con un empalme que no se nota, al tamaño de la pantalla y con el BPM en el nombre.
-4. **Al motor.** Se arrastra la carpeta: los loops rotan por sección y los temas se amarran al tempo de la sesión.
+4. **Al motor.** Se arrastra la carpeta: los loops rotan por sección, los temas se amarran al tempo de la sesión y las subidas terminan justo en el drop.
+
+**Para que el video se emocione en el coro** (cómo escribir el prompt por compases, encadenar tomas y cerrar la subida en el drop): [`subida-y-coro.md`](subida-y-coro.md).
 
 ## Especificaciones del show (psicoRoom, 31 de octubre)
 
@@ -34,6 +36,8 @@ bash conformar.sh humo_monja.mp4 128 8 --perfil psicoroom --hap --nombre sacro_m
 
 - Si el video es más largo, se usa el trozo que digas con `--desde SEGUNDOS`.
 - Si es más corto (lo normal en video con IA: 5–10 s), se ralentiza interpolando cuadros hasta cubrir los compases. Más de ×3 se nota; mejor pedir una toma más larga o menos compases.
+- **`--entero`**: no recorta nada; estira o encoge la toma completa hasta los compases exactos, para que cada bloque del guion caiga en su compás. Es el modo de las subidas y los coros.
+- **`--luego TOMA`**: pega otra toma a continuación (se puede repetir). Así una subida de 8 compases sale de dos tomas de 8 s.
 - El empalme funde el final con el principio durante 1 tiempo (`--fundido`). En las pruebas, el salto en el empalme quedó igual que entre dos cuadros normales; con un corte seco era 79 veces mayor.
 - A 60 fps, los loops de 4 u 8 compases a 128 BPM o cualquier número de compases a 120 BPM caen en cuadros exactos.
 - **DXV3**: ffmpeg no lo genera. Pasa el MP4 por **Resolume Alley** (gratis, viene con Resolume). HAP Q, que también va fino en Resolume, sí sale directo con `--hap`.

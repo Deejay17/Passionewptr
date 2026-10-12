@@ -4,6 +4,12 @@ Qué cambió en cada commit, de lo más nuevo a lo más viejo. Cada entrada llev
 
 ## 2026-10-12
 
+### Subidas y coros que encajan con la música [sin publicar]
+- Clips de tipo **Subida**: recorren la subida entera, a cualquier número de compases y BPM, y su último cuadro cae justo en el drop. Entran así los archivos con `subida`, `build` o `riser` en el nombre.
+- Al empezar una sección el clip entra desde su primer cuadro: el impacto del coro cae en el 1 del drop. `coro` y `chorus` en el nombre valen como `drop`.
+- `conformar.sh --entero` encaja la toma completa en N compases sin recortar el final; `--luego` encadena varias tomas.
+- Guía [`subida-y-coro.md`](visuales/fabrica/subida-y-coro.md): cómo escribir el prompt por compases (un bloque de 2 s por compás), con un ejemplo completo de Sacro.
+
 ### El proyecto pasa a ser parte de PRotocolive [1a25cfd]
 - `PROTOCOLIVE.md`: los cuatro módulos de PRotocolive (Screen Mapper, Briefing Exprés, Cue Sheet y Playbook de momentos), qué hace ya el motor en cada uno, qué falta y en qué orden seguir.
 - Los README presentan el motor y la fábrica como software de PRotocolive.

@@ -5,6 +5,9 @@
 # lo recorta a N compases de un BPM (o lo estira si se queda corto), funde el final con el
 # principio para que el empalme no se note, lo pasa a H.264 y le pone el BPM en el nombre.
 #
+# Con --entero no recorta nada: estira o encoge la toma completa hasta que dure N compases
+# exactos. Es lo que necesitan las subidas y los coros, cuyo guion va compás a compás.
+#
 # Uso:
 #   bash conformar.sh ENTRADA BPM COMPASES [opciones]
 #
@@ -19,10 +22,14 @@
 #   --perfil NOMBRE     psicoroom = 2048x1024 a 60 fps y 40 Mbps (pantalla 6×3 m, 2:1)
 #                       master4k  = 3840x1920 a 60 fps y 80 Mbps
 #   --hap               además del MP4, un .mov en HAP Q para Resolume (si tu ffmpeg lo trae)
+#   --entero            usa la toma entera: la estira o la encoge a N compases, sin recortar ni fundir
+#   --luego TOMA        pega otra toma a continuación antes de conformar (se puede repetir)
 #
-# Ejemplo:
+# Ejemplos:
 #   bash conformar.sh humo.mov 128 8 --nombre break_humo
 #   → break_humo_128bpm_8c.mp4   (8 compases a 128 BPM = 15 s exactos, empalme invisible)
+#   bash conformar.sh toma1.mp4 128 8 --entero --luego toma2.mp4 --nombre subida_sacro
+#   → subida_sacro_128bpm_8c.mp4 (las dos tomas de 8 s encajadas en 15 s; el motor la usa como Subida)
 #
 # Pensado para macOS (bash 3.2 + herramientas BSD); también funciona en Linux.
 # Requiere ffmpeg y ffprobe (en Mac: brew install ffmpeg).
@@ -33,13 +40,18 @@ error() { printf 'Error: %s\n' "$*" >&2; exit 1; }
 calc() { awk "BEGIN{printf \"%.6f\", ($1)}"; }   # entre paréntesis: en awk, «>» suelto sería una redirección
 es_numero() { printf '%s' "$1" | grep -Eq '^[0-9]+([.][0-9]+)?$'; }
 
-case "${1:-}" in -h|--help) sed -n '2,28p' "$0"; exit 0 ;; esac
-[ $# -ge 3 ] || { sed -n '2,28p' "$0" >&2; exit 2; }
+ayuda() { awk 'NR==1{next} /^#/{print;next} {exit}' "$0"; }   # el bloque de comentarios de arriba
+
+case "${1:-}" in -h|--help) ayuda; exit 0 ;; esac
+[ $# -ge 3 ] || { ayuda >&2; exit 2; }
 
 ENTRADA="$1"; BPM="$2"; COMPASES="$3"; shift 3
-DESDE=0; FUNDIDO=1; NOMBRE=""; SALIDA=""; TAM="1920x1080"; FPS=30; MBPS=""; HAP=0
+DESDE=0; FUNDIDO=1; NOMBRE=""; SALIDA=""; TAM="1920x1080"; FPS=30; MBPS=""; HAP=0; ENTERO=0
+TOMAS=("$ENTRADA")
 while [ $# -gt 0 ]; do
   case "$1" in
+    --entero) ENTERO=1; shift ;;
+    --luego) [ -n "${2:-}" ] || error "--luego necesita el archivo de la toma"; TOMAS+=("$2"); shift 2 ;;
     --desde) DESDE="${2:-}"; shift 2 ;;
     --fundido) FUNDIDO="${2:-}"; shift 2 ;;
     --nombre) NOMBRE="${2:-}"; shift 2 ;;
@@ -61,7 +73,7 @@ done
 
 command -v ffmpeg >/dev/null 2>&1 || error "falta ffmpeg (en Mac: brew install ffmpeg)"
 command -v ffprobe >/dev/null 2>&1 || error "falta ffprobe (viene con ffmpeg)"
-[ -f "$ENTRADA" ] || error "no encuentro el archivo: $ENTRADA"
+for T in "${TOMAS[@]}"; do [ -f "$T" ] || error "no encuentro el archivo: $T"; done
 es_numero "$BPM" || error "el BPM tiene que ser un número, por ejemplo 128"
 es_numero "$COMPASES" || error "los compases tienen que ser un número, por ejemplo 8"
 es_numero "$DESDE" || error "--desde tiene que ser un número de segundos"
@@ -81,20 +93,32 @@ printf '%s' "$TAM" | grep -Eq '^[0-9]+x[0-9]+$' || error "--tam tiene que ser AN
 ANCHO="${TAM%x*}"; ALTO="${TAM#*x}"
 
 # tiempos de la rejilla
+[ "$ENTERO" = "1" ] && FUNDIDO=0                # una subida o un coro no se repite: no hay empalme que fundir
 LARGO=$(calc "$COMPASES * 240 / $BPM")          # duración del loop
 FUND=$(calc "$FUNDIDO * 60 / $BPM")             # duración del fundido del empalme
 NECESITA=$(calc "$LARGO + $FUND")
 CUADROS=$(awk "BEGIN{printf \"%d\", $LARGO * $FPS + 0.5}")
 EXACTO=$(awk "BEGIN{d=$LARGO*$FPS-int($LARGO*$FPS+0.5); if(d<0)d=-d; print (d<0.001)?1:0}")
 
-DUR=$(ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 "$ENTRADA" 2>/dev/null || true)
-es_numero "${DUR:-x}" || DUR=$(ffprobe -v error -select_streams v:0 -show_entries stream=duration -of default=nw=1:nk=1 "$ENTRADA" 2>/dev/null || true)
-es_numero "${DUR:-x}" || error "no pude leer la duración de $ENTRADA (¿es un video?)"
+duracion() {
+  local d
+  d=$(ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 "$1" 2>/dev/null || true)
+  es_numero "${d:-x}" || d=$(ffprobe -v error -select_streams v:0 -show_entries stream=duration -of default=nw=1:nk=1 "$1" 2>/dev/null || true)
+  es_numero "${d:-x}" || error "no pude leer la duración de $1 (¿es un video?)"
+  printf '%s' "$d"
+}
+DUR=0
+for T in "${TOMAS[@]}"; do DUR=$(calc "$DUR + $(duracion "$T")"); done
 DISP=$(calc "$DUR - $DESDE")
 [ "$(calc "$DISP > 0.1")" = "1.000000" ] || error "--desde $DESDE queda fuera del video (dura $DUR s)"
 
-# si el trozo disponible no alcanza, se estira (cámara lenta) hasta cubrir el loop y el fundido
-ESTIRA=$(calc "($NECESITA > $DISP) ? $NECESITA / $DISP : 1")
+if [ "$ENTERO" = "1" ]; then
+  # la toma entera pasa a durar N compases: lo que el guion pone al 50 % cae a mitad de los compases
+  ESTIRA=$(calc "$LARGO / $DISP")
+else
+  # si el trozo disponible no alcanza, se estira (cámara lenta) hasta cubrir el loop y el fundido
+  ESTIRA=$(calc "($NECESITA > $DISP) ? $NECESITA / $DISP : 1")
+fi
 
 # nombre de salida: base_128bpm_8c.mp4 (el motor lee el BPM del nombre)
 if [ -z "$NOMBRE" ]; then NOMBRE=$(basename "$ENTRADA"); NOMBRE="${NOMBRE%.*}"; fi
@@ -106,7 +130,16 @@ DESTINO="$SALIDA/${NOMBRE}_${BPM_TXT}bpm_${COMP_TXT}c.mp4"
 
 # al estirar, los cuadros intermedios se interpolan (si no, la cámara lenta repite cuadros y va a saltos)
 if [ "$(calc "$ESTIRA > 1.0005")" = "1.000000" ]; then RITMO="minterpolate=fps=$FPS:mi_mode=blend"; else RITMO="fps=$FPS"; fi
-BASE="[0:v]trim=start=$DESDE,setpts=(PTS-STARTPTS)*$ESTIRA,$RITMO,scale=$ANCHO:$ALTO:force_original_aspect_ratio=increase,crop=$ANCHO:$ALTO,setsar=1"
+ENCUADRE="scale=$ANCHO:$ALTO:force_original_aspect_ratio=increase,crop=$ANCHO:$ALTO,setsar=1"
+ORIGEN="[0:v]"; PREVIO=""
+if [ ${#TOMAS[@]} -gt 1 ]; then
+  # varias tomas: se igualan de tamaño y se pegan una detrás de otra antes de conformar
+  ETIQ=""
+  for i in "${!TOMAS[@]}"; do PREVIO="$PREVIO[$i:v]$ENCUADRE,format=yuv420p,settb=AVTB,setpts=PTS-STARTPTS[t$i];"; ETIQ="$ETIQ[t$i]"; done
+  PREVIO="$PREVIO${ETIQ}concat=n=${#TOMAS[@]}:v=1:a=0[unidas];"
+  ORIGEN="[unidas]"
+fi
+BASE="$PREVIO${ORIGEN}trim=start=$DESDE,setpts=(PTS-STARTPTS)*$ESTIRA,$RITMO,$ENCUADRE"
 if [ "$(calc "$FUND > 0")" = "1.000000" ]; then
   # el primer tramo del loop es una mezcla: empieza siendo lo que viene justo después del final
   # y termina siendo el principio, así el último cuadro empalma con el primero sin salto
@@ -120,10 +153,16 @@ else
   FILTRO="$BASE,trim=end=$LARGO,setpts=PTS-STARTPTS,format=yuv420p[v]"
 fi
 
-printf 'Entrada:  %s (%.2f s)\n' "$ENTRADA" "$DUR"
-printf 'Loop:     %s compases a %s BPM = %.3f s = %s cuadros a %s fps\n' "$COMP_TXT" "$BPM_TXT" "$LARGO" "$CUADROS" "$FPS"
+if [ ${#TOMAS[@]} -gt 1 ]; then printf 'Entrada:  %s tomas seguidas (%.2f s en total)\n' "${#TOMAS[@]}" "$DUR"
+else printf 'Entrada:  %s (%.2f s)\n' "$ENTRADA" "$DUR"; fi
+printf '%s %s compases a %s BPM = %.3f s = %s cuadros a %s fps\n' "$([ "$ENTERO" = "1" ] && printf 'Entero:  ' || printf 'Loop:    ')" "$COMP_TXT" "$BPM_TXT" "$LARGO" "$CUADROS" "$FPS"
 [ "$EXACTO" = "1" ] || printf 'Aviso:    a %s fps el loop no cae en un cuadro exacto (se redondea). Con 120 BPM o loops de 4 u 8 compases a 128 es exacto.\n' "$FPS"
-[ "$(calc "$ESTIRA > 1.0005")" = "1.000000" ] && printf 'Estirado: el trozo útil dura %.2f s; se ralentiza ×%.2f para cubrir el loop\n' "$DISP" "$ESTIRA"
+if [ "$ENTERO" = "1" ]; then
+  printf 'Encaje:   la toma de %.2f s pasa a %.2f s (×%.3f, %s)\n' "$DISP" "$LARGO" "$ESTIRA" "$([ "$(calc "$ESTIRA > 1")" = "1.000000" ] && printf 'más lenta' || printf 'más rápida')"
+  [ "$(calc "$ESTIRA > 1.6 || $ESTIRA < 0.6")" = "1.000000" ] && printf 'Aviso:    el cambio de velocidad es grande y se notará; mejor generar tomas que sumen cerca de %.1f s.\n' "$LARGO"
+else
+  [ "$(calc "$ESTIRA > 1.0005")" = "1.000000" ] && printf 'Estirado: el trozo útil dura %.2f s; se ralentiza ×%.2f para cubrir el loop\n' "$DISP" "$ESTIRA"
+fi
 [ "$(calc "$ESTIRA > 3")" = "1.000000" ] && printf 'Aviso:    estirar más de ×3 suele verse a saltos; mejor un video más largo o menos compases.\n'
 
 if [ -n "$MBPS" ]; then
@@ -134,7 +173,9 @@ fi
 printf 'Salida:   %s a %s fps · %s\n' "$TAM" "$FPS" "$([ -n "$MBPS" ] && printf '%s Mbps' "$MBPS" || printf 'calidad constante')"
 
 # shellcheck disable=SC2086
-ffmpeg -hide_banner -loglevel error -y -i "$ENTRADA" -filter_complex "$FILTRO" -map "[v]" -an \
+ENTRADAS=()
+for T in "${TOMAS[@]}"; do ENTRADAS+=(-i "$T"); done
+ffmpeg -hide_banner -loglevel error -y "${ENTRADAS[@]}" -filter_complex "$FILTRO" -map "[v]" -an \
   -frames:v "$CUADROS" -r "$FPS" -c:v libx264 -preset slow $CALIDAD -pix_fmt yuv420p -movflags +faststart "$DESTINO"
 printf 'Listo:    %s\n' "$DESTINO"
 

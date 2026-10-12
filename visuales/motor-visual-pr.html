@@ -432,7 +432,7 @@ body.soltando .escena{outline:2px dashed var(--live);outline-offset:4px}
           <input type="file" id="fileClips" accept="video/*,.mp4,.m4v,.mov,.webm" multiple hidden>
         </div>
         <p class="ayuda">También puedes arrastrar videos sobre la página. Formatos: MP4 (H.264) o WebM; HAP y DXV de Resolume no se reproducen en el navegador.</p>
-        <p class="ayuda"><b>Loop</b>: clip corto que rota por sección y corta al compás. Si el nombre incluye <b>intro</b>, <b>groove</b>, <b>break</b>, <b>subida</b> (o <b>build</b>) o <b>drop</b>, se usa solo en esa sección. <b>Tema</b>: video largo hecho para una canción; se lanza en el 1 y suena entero. Los de más de 30 s, o con <b>tema</b> en el nombre, entran como tema.</p>
+        <p class="ayuda"><b>Loop</b>: clip corto que rota por sección y corta al compás. Si el nombre incluye <b>intro</b>, <b>groove</b>, <b>break</b> o <b>drop</b> (o <b>coro</b>), se usa solo en esa sección. <b>Tema</b>: video largo hecho para una canción; se lanza en el 1 y suena entero. Los de más de 30 s, o con <b>tema</b> en el nombre, entran como tema. <b>Subida</b>: video hecho para la subida; la recorre entera, estirado o acelerado para que su último cuadro caiga justo en el drop. Entran así los que llevan <b>subida</b>, <b>build</b> o <b>riser</b> en el nombre.</p>
         <p class="ayuda">Con <b>BPM</b> (escríbelo o ponlo en el nombre, como <code>_128bpm</code>) el clip queda amarrado a la sesión: si el tempo cambia, el video lo sigue y no se desfasa.</p>
         <div class="lista-clips" id="listaClips"></div>
         <label class="campo">Cambiar de clip cada
@@ -445,7 +445,7 @@ body.soltando .escena{outline:2px dashed var(--live);outline-offset:4px}
         </label>
         <label class="check"><input type="checkbox" id="chkTinte"> Teñir con la paleta para mantener la identidad</label>
         <label class="check"><input type="checkbox" id="chkVelClip"> Velocidad según la sección: lento en el break, acelera en la subida</label>
-        <p class="ayuda">En la subida los cortes se aceleran solos: cada 2 compases y, en la segunda mitad, cada compás. El drop siempre corta a un clip nuevo.</p>
+        <p class="ayuda">En la subida los cortes se aceleran solos: cada 2 compases y, en la segunda mitad, cada compás (si no hay un clip de tipo Subida). El drop siempre corta a un clip nuevo.</p>
       </div>
     </details>
 
@@ -761,7 +761,7 @@ function autoNarrativa(a,beat,dt){
 function pedirSeccion(id){
   const b=reloj.beat,base=Math.floor(b);
   if(b-base<0.25)aplicarSeccion(id,base);   // pulsado un pelín tarde: entra ya
-  else{estado.pendiente={id,beat:base+1};prepararClip(id);}   // si no, en el siguiente tiempo (el clip se prepara ya)
+  else{estado.pendiente={id,beat:base+1};prepararClip(id,true);}   // si no, en el siguiente tiempo (el clip se prepara ya)
 }
 function aplicarSeccion(id,b){
   estado.seccion=id;estado.inicio=b;estado.pendiente=null;
@@ -771,7 +771,8 @@ function aplicarSeccion(id,b){
     estado.blancoHasta=ajustes.whiteoutDrop>0?b+ajustes.whiteoutDrop:0;   // whiteout sostenido (el CO2)
     if(ajustes.frases.enDrop)lanzarFrase(b);
   }
-  cortarClip(id);
+  if(id!=='subida')soltarSubida();
+  cortarClip(id,true);
 }
 const coloresDe=id=>{const p=PALETAS[id];return{fondo:p.fondo,base:p.base,tension:p.tension,acento:p.acento,flash:p.flash};};
 function estadoMood(id){   // tu paleta, tus paneles y el acabado del logo para ese mood, o los de fábrica
@@ -1152,13 +1153,15 @@ function patrones(beat){
 }
 
 /* ───────── clips de video (capa 1) ─────────
-   Dos tipos: «loop» (cortos, rotan por sección y cortan al compás) y «tema» (largos, se lanzan en el 1 y suenan enteros).
+   Tres tipos: «loop» (cortos, rotan por sección y cortan al compás), «tema» (largos, se lanzan en el 1 y suenan enteros)
+   y «subida» (recorren la subida entera y llegan a su último cuadro justo en el drop).
    Un clip con BPM queda amarrado a la sesión: su velocidad sigue al tempo y su posición a la rejilla de compases. */
 const IDS=SECCIONES.map(s=>s[0]);
-const PALABRAS={intro:['intro'],groove:['groove','loop'],break:['break'],subida:['subida','build','riser'],drop:['drop']};
+const PALABRAS={intro:['intro'],groove:['groove','loop'],break:['break'],subida:['subida','build','riser'],drop:['drop','coro','chorus']};
 const SIGUIENTE={intro:'groove',groove:'break',break:'subida',subida:'drop',drop:'groove'};
-const ES_TEMA=/tema|canci[oó]n|song/i;
-const clips={lista:[],actual:null,entrante:null,prep:{},rot:{},sig:1,tema:null,temaPend:null,ultimoTema:null,canvas:document.createElement('canvas')};
+const ES_TEMA=/tema|canci[oó]n|song/i,ES_SUBIDA=/subida|build|riser/i;
+const clips={lista:[],actual:null,entrante:null,prep:{},rot:{},sig:1,tema:null,temaPend:null,ultimoTema:null,
+  subida:null,subidaPrep:null,rotSubida:0,canvas:document.createElement('canvas')};
 clips.ctx=clips.canvas.getContext('2d');
 const memClips=guardado.leer('clips',{})||{};   // BPM, tipo y secciones de cada clip, por nombre de archivo
 const usaClips=()=>ajustes.fondo.on&&ajustes.fondo.fuente!=='generativo';
@@ -1168,8 +1171,8 @@ const minSeg=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
 function bpmDelNombre(n){const m=n.match(/(\d{2,3}(?:[.,]\d+)?)\s*-?\s*bpm/i);if(!m)return null;const b=parseFloat(m[1].replace(',','.'));return b>=60&&b<=200?b:null;}
 function seccionesPorNombre(n){const s=n.toLowerCase(),r=IDS.filter(id=>PALABRAS[id].some(p=>s.includes(p)));return new Set(r.length?r:IDS);}
 function recordarClip(c){memClips[c.nombre]={bpm:c.bpm,tipo:c.tipo,secciones:[...c.secciones],logo:c.logoFijo?c.logo:undefined};guardado.escribir('clips',memClips);}
-// los temas son tus videos grandes: por defecto el logo se aparta; sobre los loops (el relleno) va encima
-function fijarTipo(c,t){c.tipo=t;c.video.loop=t==='loop';if(!c.logoFijo)c.logo=t==='tema'?'oculto':'encima';}
+// temas y subidas son tus videos grandes: por defecto el logo se aparta; sobre los loops (el relleno) va encima
+function fijarTipo(c,t){c.tipo=t;c.video.loop=t==='loop';if(!c.logoFijo)c.logo=t==='loop'?'encima':'oculto';}
 function soltarDeLoops(c){   // deja de usar un clip como loop (pasó a tema, falló o se quitó)
   for(const k in clips.prep)if(clips.prep[k]===c)delete clips.prep[k];
   if(clips.tema===c)return;
@@ -1188,8 +1191,8 @@ function agregarClips(files){
     const c={id:clips.sig++,nombre,video:v,dur:0,error:false,t0:0,inicioBeat:0,
       bpm:m?m.bpm:bpmDelNombre(f.name),
       secciones:m&&m.secciones&&m.secciones.length?new Set(m.secciones):seccionesPorNombre(f.name),
-      tipoFijo:!!m||ES_TEMA.test(nombre),logo:m&&m.logo?m.logo:'encima',logoFijo:!!(m&&m.logo)};
-    fijarTipo(c,m?m.tipo:ES_TEMA.test(nombre)?'tema':'loop');
+      tipoFijo:!!m||ES_TEMA.test(nombre)||ES_SUBIDA.test(nombre),logo:m&&m.logo?m.logo:'encima',logoFijo:!!(m&&m.logo)};
+    fijarTipo(c,m?m.tipo:ES_TEMA.test(nombre)?'tema':ES_SUBIDA.test(nombre)?'subida':'loop');
     v.addEventListener('loadedmetadata',()=>{
       c.dur=isFinite(v.duration)?v.duration:0;
       if(!c.tipoFijo&&c.dur>=30){fijarTipo(c,'tema');soltarDeLoops(c);}   // los videos largos se tratan como tema
@@ -1200,6 +1203,7 @@ function agregarClips(files){
       c.error=true;
       if(clips.temaPend===c)clips.temaPend=null;
       if(clips.tema===c)terminarTema();
+      if(clips.subida===c)soltarSubida();
       soltarDeLoops(c);
       pintarClips();aviso('No se puede reproducir «'+c.nombre+'». Conviértelo a MP4 (H.264) o WebM.');
     });
@@ -1213,7 +1217,9 @@ function agregarClips(files){
 function quitarClip(c){
   if(clips.temaPend===c)clips.temaPend=null;
   if(clips.tema===c)terminarTema();
+  if(clips.subidaPrep===c)clips.subidaPrep=null;
   clips.lista=clips.lista.filter(x=>x!==c);
+  if(clips.subida===c)soltarSubida();
   soltarDeLoops(c);
   if(clips.ultimoTema===c)clips.ultimoTema=null;
   const v=c.video;v.pause();URL.revokeObjectURL(v.src);v.removeAttribute('src');v.load();v.remove();
@@ -1237,36 +1243,40 @@ function elegir(sec){   // rota por los clips de la sección, evitando los que y
   for(let i=0;i<l.length;i++){const c=l[(k+i)%l.length];if(!ocupados.has(c)){clips.rot[sec]=k+i+1;return c;}}
   clips.rot[sec]=k+1;return l[k%l.length];
 }
+function aPunto(c,t){c.t0=t;try{c.video.currentTime=t;}catch(e){}}
 function puntoAlAzar(c){   // con BPM cae justo en un compás del clip
-  if(c.bpm&&c.dur>=compasDe(c)*2)c.t0=Math.floor(Math.random()*Math.floor(c.dur/compasDe(c)))*compasDe(c);
-  else c.t0=c.dur>6?Math.random()*(c.dur-4):0;
-  try{c.video.currentTime=c.t0;}catch(e){}
+  if(c.bpm&&c.dur>=compasDe(c)*2)aPunto(c,Math.floor(Math.random()*Math.floor(c.dur/compasDe(c)))*compasDe(c));
+  else aPunto(c,c.dur>6?Math.random()*(c.dur-4):0);
 }
-// deja un clip quieto en su punto de entrada y ya decodificado: al cortar solo hay que darle play
-function prepararClip(sec){
+// deja un clip quieto en su punto de entrada y ya decodificado: al cortar solo hay que darle play.
+// entrada: es para el 1 de la sección, así que arranca desde su primer cuadro (el impacto del coro va ahí);
+// los cortes dentro de la sección entran en un compás al azar para que no se repita igual
+function prepararClip(sec,entrada){
   if(!sec||!usaClips()||!clips.lista.length)return;
+  if(sec==='subida'&&prepararSubida())return;
   const p=clips.prep[sec];
-  if(p&&!p.error&&p.tipo==='loop'&&p!==clips.actual&&p!==clips.entrante)return;
+  if(p&&!p.error&&p.tipo==='loop'&&p!==clips.actual&&p!==clips.entrante){if(entrada&&p.t0)aPunto(p,0);return;}
   const c=elegir(sec);if(!c)return;
   clips.prep[sec]=c;
   if(c===clips.actual||c===clips.entrante)return;
   c.video.preload='auto';
   if(!c.video.paused)c.video.pause();
-  puntoAlAzar(c);
+  if(entrada)aPunto(c,0);else puntoAlAzar(c);
 }
-function cortarClip(sec){
+function cortarClip(sec,entrada){
   if(clips.tema||!usaClips()||!clips.lista.length)return;   // mientras suena un tema no hay cortes
+  if(sec==='subida'&&iniciarSubida())return;
   let c=clips.prep[sec];delete clips.prep[sec];
-  if(!c||c.error||c.tipo!=='loop'){prepararClip(sec);c=clips.prep[sec];delete clips.prep[sec];}
+  if(!c||c.error||c.tipo!=='loop'){prepararClip(sec,entrada);c=clips.prep[sec];delete clips.prep[sec];}
   if(!c)return;
   c.inicioBeat=Math.floor(reloj.beat/4)*4;   // el clip cuenta sus compases desde este 1
-  if(c===clips.actual)puntoAlAzar(c);         // con un solo clip, el corte es un salto a otro compás del mismo
+  if(c===clips.actual){if(entrada)aPunto(c,0);else puntoAlAzar(c);}   // con un solo clip, el corte es un salto dentro del mismo
   else{const p=c.video.play();if(p&&p.catch)p.catch(()=>{});clips.entrante=c;avanzarClips();}
   // prepara el siguiente de esta sección y el de la que suele venir después (en la subida, el del drop)
-  setTimeout(()=>{prepararClip(sec);prepararClip(SIGUIENTE[sec]);},250);
+  setTimeout(()=>{prepararClip(sec);prepararClip(SIGUIENTE[sec],true);},250);
 }
 function tocaCorte(c){   // ¿toca corte de clip al empezar el compás c?
-  if(clips.tema||!usaClips()||!clips.lista.length)return false;
+  if(clips.tema||clips.subida||!usaClips()||!clips.lista.length)return false;
   const cada=ajustes.clips.cada|0;if(!cada)return false;
   const rel=c-Math.floor(estado.inicio/4),paso=estado.seccion==='subida'?(vis.tension>=0.5?1:2):cada;
   return rel>0&&mod(rel,paso)===0;
@@ -1274,6 +1284,47 @@ function tocaCorte(c){   // ¿toca corte de clip al empezar el compás c?
 function velocidadClip(){
   const s=estado.seccion,r=s==='break'?0.6:s==='intro'?0.85:s==='drop'?1.15:1;
   return clamp(r*(1+0.8*vis.tension),0.25,3);
+}
+
+/* subidas: el video de la subida la recorre entera; su último cuadro cae justo en el drop.
+   Su línea de tiempo se reparte a lo largo de los compases de la subida: si el guion dice que a la mitad
+   del video la luz empieza a abrirse, se abre a mitad de la subida, sea de 4, 8 o 16 compases y a cualquier BPM. */
+const clipsSubida=()=>clips.lista.filter(c=>!c.error&&c.tipo==='subida');
+function prepararSubida(){   // deja el siguiente video de subida quieto en su primer cuadro; false si no hay ninguno
+  let c=clips.subidaPrep;
+  if(!c||c.error||c.tipo!=='subida'){
+    const l=clipsSubida();if(!l.length){clips.subidaPrep=null;return false;}
+    c=clips.subidaPrep=l[clips.rotSubida++%l.length];
+  }
+  if(c!==clips.actual&&c!==clips.entrante){
+    c.video.preload='auto';
+    if(!c.video.paused)c.video.pause();
+    if(c.video.currentTime>0.01){try{c.video.currentTime=0;}catch(e){}}
+  }
+  return true;
+}
+function iniciarSubida(){
+  if(!prepararSubida())return false;
+  const c=clips.subidaPrep;clips.subidaPrep=null;clips.subida=c;
+  amarrarSubida(c);
+  if(c!==clips.actual){clips.entrante=c;avanzarClips();}
+  setTimeout(()=>prepararClip('drop',true),250);   // el clip del drop queda listo, en su primer cuadro, para cortar sin retraso
+  return true;
+}
+// al salir de la subida el video se queda en pantalla solo hasta que entra el clip siguiente
+function soltarSubida(){clips.subida=null;}
+function amarrarSubida(c){
+  const v=c.video;if(v.seeking||!c.dur)return;
+  const fin=Math.max(0,c.dur-0.05),p=(reloj.beat-inicioSubida())/(ajustes.compasesSubida*4),te=clamp(p)*fin;
+  if(p<=0||p>=1){   // antes del primer compás o pasado el drop: quieto en el primer o el último cuadro
+    if(!v.paused)v.pause();
+    if(Math.abs(v.currentTime-te)>0.04){try{v.currentTime=te;}catch(e){}}
+    return;
+  }
+  const base=clamp(fin/(ajustes.compasesSubida*240/reloj.bpm),0.0625,16),d=v.currentTime-te;
+  if(Math.abs(d)>0.25*Math.max(1,base)){try{v.currentTime=te;}catch(e){}fijarVel(v,base);}
+  else fijarVel(v,Math.abs(d)<0.02?base:clamp(base*(1-d*1.6),base*0.88,base*1.12));   // se pone al día sin saltos
+  if(v.paused){const pr=v.play();if(pr&&pr.catch)pr.catch(()=>{});}
 }
 
 /* temas: videos largos hechos a un BPM, lanzados en el 1 */
@@ -1297,7 +1348,7 @@ function lanzarTema(c){
   if(c!==clips.actual){if(!c.video.paused)c.video.pause();try{c.video.currentTime=0;}catch(e){}}
 }
 function iniciarTema(c){
-  clips.temaPend=null;clips.tema=c;clips.ultimoTema=c;
+  clips.temaPend=null;clips.tema=c;clips.ultimoTema=c;soltarSubida();
   const v=c.video,te=c.bpm?Math.max(0,(reloj.beat-c.inicioBeat)*60/c.bpm):0;
   if(Math.abs(v.currentTime-te)>0.04){try{v.currentTime=te;}catch(e){}}
   v.playbackRate=c.bpm?clamp(reloj.bpm/c.bpm,0.25,4):1;
@@ -1337,6 +1388,12 @@ function avanzarClips(){
   const a=clips.actual;if(!a)return;
   const esTema=a===clips.tema;
   if(!esTema&&!usaClips()){if(!a.video.paused)a.video.pause();return;}
+  if(a===clips.subida){amarrarSubida(a);return;}
+  if(a.tipo==='subida'){   // la subida ya pasó: quieto hasta que entre el clip siguiente
+    if(!a.video.paused)a.video.pause();
+    if(!clips.entrante){clips.actual=null;pintarClipActivo();}
+    return;
+  }
   if(esTema&&a.bpm&&(reloj.beat-a.inicioBeat)*60/a.bpm>=a.dur-0.05){terminarTema();return;}
   if(a.video.paused&&!a.video.ended){const p=a.video.play();if(p&&p.catch)p.catch(()=>{});}
   if(a.bpm)amarrar(a);
@@ -1380,13 +1437,16 @@ function pintarClips(){
     const d=document.createElement('code');d.textContent=c.error?'no compatible':c.dur?minSeg(c.dur):'…';
     const ctrl=document.createElement('div');ctrl.className='clip-ctrl';
     const seg=document.createElement('div');seg.className='seg';seg.setAttribute('role','group');seg.setAttribute('aria-label','Tipo de clip');
-    for(const[t,et]of[['loop','Loop'],['tema','Tema']]){
+    for(const[t,et]of[['loop','Loop'],['tema','Tema'],['subida','Subida']]){
       const b=document.createElement('button');b.type='button';b.textContent=et;b.setAttribute('aria-pressed',String(c.tipo===t));
       b.addEventListener('click',()=>{
         if(c.tipo===t)return;
         if(clips.tema===c||clips.temaPend===c)pararTema();
+        if(clips.subidaPrep===c)clips.subidaPrep=null;
+        if(clips.subida===c)soltarSubida();   // si pasa a loop sigue en pantalla como loop
         fijarTipo(c,t);c.tipoFijo=true;
-        if(t==='tema')soltarDeLoops(c);
+        if(t!=='loop')soltarDeLoops(c);
+        if(t==='subida'&&estado.seccion==='subida'&&!clips.subida)cortarClip('subida');
         recordarClip(c);pintarClips();
       });
       seg.appendChild(b);
@@ -1412,7 +1472,7 @@ function pintarClips(){
         secs.appendChild(b);
       }
       ctrl.appendChild(secs);
-    }else{
+    }else if(c.tipo==='tema'){
       const l=document.createElement('button');l.type='button';l.className='btn chico';l.textContent='Lanzar';l.addEventListener('click',()=>lanzarTema(c));
       ctrl.appendChild(l);
     }
