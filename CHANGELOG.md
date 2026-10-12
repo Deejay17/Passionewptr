@@ -4,6 +4,12 @@ Qué cambió en cada commit, de lo más nuevo a lo más viejo. Cada entrada llev
 
 ## 2026-10-12
 
+### Borde del logo [6e1d932]
+- Contorno y sombra de serie para que el logo se defina sobre cualquier fondo: un canal oscuro alrededor de la P y la R que las separa de las ondas del kick y corta lo que pasa por detrás, y una sombra suave debajo.
+- En silueta (contraluz, lavado), el borde es un filo de luz detrás del logo.
+- Con un SVG cargado, el borde rodea el logo entero sin costuras entre piezas.
+- Opción *Borde del logo* en *Logo*: contorno y sombra, solo contorno, solo sombra o sin borde. No cambia los cuadros por segundo.
+
 ### Lector de pistas [5b9c380]
 - [Lector de pistas](visuales/fabrica/lector-de-pistas.html), página nueva de la fábrica: se le arrastra una canción y encuentra el BPM, el 1 y las secciones por compases (intro, groove, break, subida y drop), con un mapa de la canción para escucharla con clic en los tiempos.
 - Arma la lista de videos que hay que pedir para esa canción: un prompt de protocolo por rol, con el mood elegido, el nombre del archivo y las tomas de 8 s que hacen falta (la subida larga sale en varias tomas encadenadas). Una canción suele salir con 5 videos y 6 tomas, frente a las 20 o 30 de un video del tema entero.
