@@ -4,7 +4,7 @@ Qué cambió en cada commit, de lo más nuevo a lo más viejo. Cada entrada llev
 
 ## 2026-10-12
 
-### Pausa con Traktor y joystick [sin publicar]
+### Pausa con Traktor y joystick [4c28423]
 - **Pausa**: la imagen se queda quieta cuando Traktor se para y, al volver, sigue desde el mismo golpe y en la fase de su reloj, así la frase no se descuadra. Entra con `Q`, con el silencio del audio (más de 1,5 s), con el Play de los decks mapeado (*Deck A–D en play*) o con el Stop del MIDI clock.
 - **Joystick o mando USB**: se aprende como un control MIDI; botones para disparos y ejes como perilla o como botón empujándolos a un lado.
 
