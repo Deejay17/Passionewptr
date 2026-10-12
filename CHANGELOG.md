@@ -4,7 +4,7 @@ Qué cambió en cada commit, de lo más nuevo a lo más viejo. Cada entrada llev
 
 ## 2026-10-12
 
-### Moods Humo y Cruz: humo y siluetas [sin publicar]
+### Moods Humo y Cruz: humo y siluetas [4d72802]
 - **Humo**: niebla densa a ras del escenario que se ve donde le da la luz, un contraluz detrás de la cabina que deja en silueta al DJ y al logo (Shadow Crafting), una ventana de luz con láminas que se encienden una por tiempo, haces en la subida y hélices de puntos en el drop.
 - **Cruz**: la imagen recortada en cruz con cuatro hélices de puntos en espejo; el pulso viaja del centro a las puntas en cada tiempo.
 - **Forma de la imagen** en *Salida*: rectángulo, cruz o casa (con una puerta abierta para la cabina).
