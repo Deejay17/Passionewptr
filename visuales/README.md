@@ -12,7 +12,7 @@ La idea es que la narrativa del set ya venga programada, en lugar de montarla cl
 | **Subida** | La tensión sube sola durante N compases: color hacia el de tensión, trazos que se abren y vibran, redoble visual que acelera (negras → corcheas → semicorcheas), strobe en la segunda mitad y blackout en el último tiempo |
 | **Drop** | Golpe de flash, color de acento, trazos apretados, onda de kick en espejo. Dura 16 compases y vuelve solo al groove |
 
-Son dos capas, como pediste: **1 · Fondo** (barras, diagonales con los ángulos del logo, onda de kick) y **2 · Logo PR**.
+Son dos capas, como pediste: **1 · Fondo** (tus clips de video, o el fondo generativo con barras, diagonales con los ángulos del logo y onda de kick) y **2 · Logo PR**.
 
 ## Uso rápido
 
@@ -27,8 +27,25 @@ Son dos capas, como pediste: **1 · Fondo** (barras, diagonales con los ángulos
 | `T` | Tap tempo (empieza a tocar en el 1) |
 | `F` / `B` / `S` | Flash / Blackout / Strobe mientras mantienes la tecla |
 | `↑` `↓` | Tensión manual |
+| `C` | Siguiente clip |
 | `A` | Modo auto |
 | `Enter` | Pantalla completa |
+
+## Clips de video
+
+- Pulsa **Elegir carpeta** (o **Añadir clips**, o arrástralos sobre la página). Hay que volver a cargarlos cada vez que abres el motor.
+- Si el nombre del archivo incluye `intro`, `groove`, `break`, `subida` (o `build`) o `drop`, el clip solo se usa en esa sección. Si no, vale para todas. También se cambia a mano con los botones I G B S D de cada clip.
+- Los cortes caen siempre en el compás: cada 4, 8 o 16 compases (eliges tú). En la subida se aceleran solos (cada 2 compases y luego cada compás) y el drop siempre corta a un clip nuevo. Cada corte arranca en un punto al azar del clip para que no se repita igual.
+- El clip siguiente queda preparado antes del corte. En la subida se deja listo el del drop, así el corte del drop es inmediato y sin cuadros negros.
+- **Teñir con la paleta** pasa el clip a blanco y negro y lo colorea con el color de la sección (base, tensión o acento). Así cualquier material mantiene tu identidad.
+- **Velocidad según la sección**: el clip va más lento en el break, se acelera con la tensión de la subida y un poco más rápido en el drop.
+- El kick abre el brillo del clip, y el logo lleva un contorno oscuro para leerse sobre cualquier imagen.
+
+**Formatos**: Chrome reproduce MP4 (H.264) y WebM. Los códecs de VJ como HAP o DXV no funcionan en el navegador. Para convertir una carpeta con ffmpeg:
+
+```bash
+for f in *.mov; do ffmpeg -i "$f" -c:v libx264 -crf 18 -pix_fmt yuv420p -an "${f%.*}.mp4"; done
+```
 
 ## Sincronizar con Traktor (Mac)
 
@@ -66,7 +83,9 @@ Todo está en `motor-visual-pr.html`, en bloques comentados:
 | Cómo se ve cada sección (color, estela, apertura de trazos, velocidad) | `function objetivos` |
 | Cuánto dura el drop | `DROP_COMPASES` |
 | Qué patrón de fondo usa cada sección | `function patrones` |
-| La forma del logo | `LOGO` (coordenadas sobre la imagen original) |
+| La forma del logo | `LOGO` (coordenadas sobre la imagen original; se cambiará por el vector) |
+| Cuándo cortan los clips | `function tocaCorte` |
+| El tinte de los clips | `function dibujarClip` |
 | La forma de la onda de kick | `function envKick` |
 | Sensibilidad del modo auto | `function autoNarrativa` |
 
