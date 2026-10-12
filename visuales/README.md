@@ -85,6 +85,7 @@ Sacro, Bio-Hazard y Perreo son los bloques del show de Halloween. Ellos, Humo y 
 - **Trazado PR**: el logo redibujado trazo a trazo, con su onda de kick animada.
 - **SVG**: *Cargar logo SVG* (o arrastrarlo a la página) usa cualquier vector, con grosor ajustable, el color de la sección, kick y tensión. Se recuerda para la próxima vez. Pensado para el vector oficial.
 - **Acabado cromo negro**: reflejos metálicos que giran y destellan con el kick. Cada mood recuerda su acabado.
+- **Jerarquía visual** (casilla *Jerarquía visual* en *Logo*): en cada momento manda una sola cosa y lo demás la acompaña. El logo manda en el intro y en el break; el fondo manda en el groove y en la subida, con el logo más chico y tenue; en el drop el fondo manda y el logo vuelve a mandar solo en los 4 primeros tiempos de cada frase de 8 compases. Cuando el fondo deja al logo en silueta (lavado, contraluz) el logo vuelve al frente. Algunos moods cambian el reparto: en Líneas el logo manda siempre, en Perreo queda de fondo en el groove y en Cruz golpea en el groove y se retira en la subida. Con un video en pantalla no se toca nada.
 
 ## Pantalla 2:1
 

@@ -434,6 +434,7 @@ body.soltando .escena{outline:2px dashed var(--live);outline-offset:4px}
         </label>
         <label class="campo">Opacidad<input type="range" id="rngLogo" min="0" max="100"></label>
         <label class="campo">Tamaño<input type="range" id="rngTam" min="20" max="95"></label>
+        <label class="check"><input type="checkbox" id="chkJerarquia"> Jerarquía visual: un protagonista a la vez. El fondo manda en el groove, la subida y el drop (ahí el logo vuelve en el 1 de cada frase); el logo manda en el intro, el break y siempre que está en silueta</label>
         <label class="campo">Logo
           <select id="selFuenteLogo">
             <option value="trazado">Trazado PR (con la onda de kick animada)</option>
@@ -677,6 +678,7 @@ const ROLES=[
    Cada sección lista sus fondos: la subida pasa al segundo con la tensión, el drop rota cada 4 compases y el resto cada 8. */
 const MOODS={
   lineas:{nombre:'Líneas',desc:'El primero: trazos, barras y diagonales con los ángulos del logo, en ultravioleta.',paleta:'ultravioleta',
+    jerarquia:{groove:{logo:'hero',fondo:'sop'},subida:{logo:'hero',fondo:'sop'},drop:{logo:'hero',fondo:'sop'}},
     paneles:{n:0,hueco:0.18,modo:'continuo'},
     fondos:{intro:[['onda']],groove:[['barras'],['diagonales']],break:[['diagonales']],subida:[['diagonales'],['diagonales','barras']],drop:[['onda','barras']]},
     escena:'neon light lines and laser beams'},
@@ -697,7 +699,7 @@ const MOODS={
     paneles:{n:0,hueco:0.18,modo:'continuo'},acabado:'luz',tipografia:'monumental',negro:true,
     fondos:{intro:[['codigos']],groove:[['codigos'],['barras'],['diagonales']],break:[['codigos']],subida:[['diagonales','codigos'],['diagonales','barras']],drop:[['alarma','barras'],['alarma','codigos']]},
     escena:'a containment lab with emergency lights and toxic fog'},
-  perreo:{nombre:'Perreo',desc:'Blanco y negro brutal, tipografía de brocha y estrobo; logo en cromo. LA MÁQUINA.',paleta:'perreo',
+  perreo:{jerarquia:{groove:{logo:'atm',fondo:'hero'},drop:{logo:'pulso',fondo:'hero'}},nombre:'Perreo',desc:'Blanco y negro brutal, tipografía de brocha y estrobo; logo en cromo. LA MÁQUINA.',paleta:'perreo',
     paneles:{n:0,hueco:0.18,modo:'continuo'},acabado:'cromo',tipografia:'brocha',negro:true,
     fondos:{intro:[['barras']],groove:[['barras'],['diagonales']],break:[['particulas']],subida:[['diagonales'],['diagonales','barras']],drop:[['barras'],['onda','barras']]},
     escena:'stark graphic shapes and hard strobe light'},
@@ -706,7 +708,7 @@ const MOODS={
     paneles:{n:0,hueco:0.18,modo:'continuo'},acabado:'luz',tipografia:'monumental',negro:true,
     fondos:{intro:[['humo']],groove:[['contraluz','humo'],['haces','humo']],break:[['contraluz','humo']],subida:[['haces','humo'],['haces','contraluz']],drop:[['helice','humo'],['contraluz','haces']]},
     escena:'thick haze lit by cold white volumetric light beams, backlit black silhouettes, minimal monochrome stage'},
-  cruz:{nombre:'Cruz',desc:'La imagen en forma de cruz, como la pantalla del escenario: cuatro hélices de puntos en espejo, como un caleidoscopio, sobre humo; el pulso viaja del centro a las puntas en cada tiempo.',paleta:'humo',
+  cruz:{jerarquia:{groove:{logo:'pulso',fondo:'hero'},subida:{logo:'atm',fondo:'hero'}},nombre:'Cruz',desc:'La imagen en forma de cruz, como la pantalla del escenario: cuatro hélices de puntos en espejo, como un caleidoscopio, sobre humo; el pulso viaja del centro a las puntas en cada tiempo.',paleta:'humo',
     paneles:{n:0,hueco:0.18,modo:'continuo'},acabado:'luz',tipografia:'monumental',negro:true,forma:'cruz',
     fondos:{intro:[['humo']],groove:[['helice']],break:[['humo']],subida:[['helice','haces']],drop:[['helice','humo'],['helice','haces']]},
     escena:'four mirrored twisting ribbons made of glowing dots, kaleidoscopic symmetry, cold white and cyan, thick haze'}
@@ -718,7 +720,7 @@ const BASE={bpm:126,fuente:'interno',compasesSubida:8,autoDrop:true,blackoutAnte
   mood:'escenario',moodEnDrop:false,whiteoutDrop:0,siluetaBlanco:true,
   salida:{formato:'libre',ancla:'centro',zonaSegura:true,forma:'mood'},
   frases:{lista:['HOW DO YOU FEEL RIGHT NOW','LA MÁQUINA','PETER ROMO'],modo:'palabras',enDrop:false,idx:0},
-  tipos:{frases:'mood',texto:'barlow'},efectos:{blur:true,glitch:true},pausaSilencio:true};
+  tipos:{frases:'mood',texto:'barlow'},efectos:{blur:true,glitch:true},pausaSilencio:true,jerarquia:true};
 const previo=guardado.leer('ajustes',{})||{};
 const ajustes=Object.assign({},BASE,previo);
 ajustes.fondo=Object.assign({},BASE.fondo,previo.fondo);
@@ -2157,7 +2159,7 @@ function escena(ctx,W,H,beat){
     conClip=(!!clips.tema||usaClips())&&dibujarClip(c,W,H);
     if(!conClip||ajustes.fondo.fuente==='mixto'){
       const ps=patrones(beat);lavado=ps.includes('lavado')||ps.includes('contraluz');   // a contraluz, el logo también queda en silueta
-      c.globalAlpha=ajustes.fondo.op*(conClip?0.6:1);
+      c.globalAlpha=ajustes.fondo.op*(conClip?0.6:1)*jer.fondo;
       for(const p of ps)DIBUJO[p](c,W,H,vis,vis.colLineas,beat);
       c.globalAlpha=1;
     }
@@ -2166,7 +2168,7 @@ function escena(ctx,W,H,beat){
   }
   if(ajustes.logo.on&&ajustes.logo.op>0&&estado.logoAlfa>0.01){
     // sobre un lavado de color, la capa 2 va en negro: silueta, como el público contra la pantalla
-    ctx.globalAlpha=ajustes.logo.op*estado.logoAlfa;
+    ctx.globalAlpha=ajustes.logo.op*estado.logoAlfa*(lavado?1:jer.logo);   // una silueta no se atenúa: perdería el contraste
     dibujarCapa2(ctx,W,H,beat,lavado?mezcla(pal.fondo,[0,0,0],0.4):vis.colLogo,lavado?0:vis.glow,conClip&&!lavado,ajustes.logo.acabado==='cromo'&&!lavado,estado.logoEsquina);
   }
   ctx.globalAlpha=1;
@@ -2187,7 +2189,7 @@ function dibujarCapa2(ctx,W,H,beat,color,glow,recorte,cromo,esquina=0){
   const modo=esquina>0.5?'logo':ajustes.texto.modo;
   if(modo!=='texto'){
     const junto=modo==='ambos';
-    dibujarLogoActual(ctx,W,H,{escala:lerp(ajustes.logo.tam*(junto?0.74:1)*vis.zoom,0.16,esquina)*(1+0.025*estado.kick),
+    dibujarLogoActual(ctx,W,H,{escala:lerp(ajustes.logo.tam*(junto?0.74:1)*vis.zoom*jer.esc,0.16,esquina)*(1+0.025*estado.kick),
       dx:esquina*W*0.41,dy:lerp(junto?-H*0.09:0,H*0.18,esquina),color,spread:vis.spread,jitter:vis.jitter,flotar:vis.flotar,
       prog:estado.seccion==='intro'?clamp((beat-estado.inicio)/16):1,ondaProg:estado.ondaProg,ondaGan:1+0.45*clamp(estado.kick,0,1.5),
       kick:estado.kick,glow,semilla:estado.semilla,tiempo:performance.now()/1000,oscuro:pal.oscuro&&glow>0,recorte,acabado:cromo?'cromo':'luz'});
@@ -2673,7 +2675,7 @@ function sincronizarControles(){
   $('#selPaneles').value=String(ajustes.paneles.n);$('#rngHueco').value=Math.round(ajustes.paneles.hueco*100);$('#selModoPaneles').value=ajustes.paneles.modo;
   $('#selCapa2').value=ajustes.texto.modo;$('#txtL1').value=ajustes.texto.l1;$('#txtL2').value=ajustes.texto.l2;$('#selCada').value=String(ajustes.clips.cada);
   $('#chkTinte').checked=ajustes.clips.tinte;$('#chkVelClip').checked=ajustes.clips.velocidad;
-  $('#chkLogo').checked=ajustes.logo.on;$('#rngLogo').value=Math.round(ajustes.logo.op*100);$('#rngTam').value=Math.round(ajustes.logo.tam*100);
+  $('#chkJerarquia').checked=ajustes.jerarquia;$('#chkLogo').checked=ajustes.logo.on;$('#rngLogo').value=Math.round(ajustes.logo.op*100);$('#rngTam').value=Math.round(ajustes.logo.tam*100);
   $('#selPaleta').value=PALETAS[ajustes.paleta]?ajustes.paleta:'personal';
   for(const[k]of ROLES)$('#col-'+k).value=ajustes.colores[k];
   $('#chkPulsoAudio').checked=ajustes.pulsoAudio;$('#rngSens').value=ajustes.umbralKick;$('#outSens').textContent=ajustes.umbralKick+' dB';
@@ -2823,6 +2825,7 @@ function enlazar(){
   cambio('#chkLogo',e=>{ajustes.logo.on=e.target.checked;guardar();});
   cambio('#rngLogo',e=>{ajustes.logo.op=e.target.value/100;guardar();},'input');
   cambio('#rngTam',e=>{ajustes.logo.tam=e.target.value/100;guardar();},'input');
+  cambio('#chkJerarquia',e=>{ajustes.jerarquia=e.target.checked;guardar();});
   cambio('#selPaleta',e=>{
     const p=PALETAS[e.target.value];if(!p)return;
     ajustes.paleta=e.target.value;ajustes.colores={fondo:p.fondo,base:p.base,tension:p.tension,acento:p.acento,flash:p.flash};
@@ -2980,6 +2983,7 @@ function cuadro(){
   if(a&&a.kick&&ajustes.pulsoAudio)kick(PULSO[estado.seccion]>0?Math.max(0.7,PULSO[estado.seccion]):0.35);
   autoNarrativa(a,beat,dt);
   actualizarVis(beat,dt);
+  actualizarJerarquia(beat,dt);
   decaer(dt,segBeat,beat);
   estado.fase+=dt*vis.velocidad;
   {const a=clips.actual,deClip=a&&(a===clips.tema||usaClips())?a.logo:'encima',k=1-Math.exp(-dt/0.35);
@@ -2988,6 +2992,23 @@ function cuadro(){
   dibujarSalida(beat);
   actualizarUI(beat,a);
 }
+/* jerarquía visual: en cada momento manda un solo elemento. Protagonista al 100 %, soporte a ~50 % y más
+   pequeño, atmósfera al fondo. «pulso»: protagonista en el primer compás de cada frase de 8 y luego fuera */
+const NIVEL={hero:{esc:1,alfa:1,fondo:1},sop:{esc:0.62,alfa:0.5,fondo:0.55},atm:{esc:0.5,alfa:0.2,fondo:0.25},oculto:{esc:0.5,alfa:0,fondo:0}};
+const JER_BASE={intro:{logo:'hero',fondo:'sop'},groove:{logo:'sop',fondo:'hero'},break:{logo:'hero',fondo:'sop'},subida:{logo:'sop',fondo:'hero'},drop:{logo:'pulso',fondo:'hero'}};
+const jer={esc:1,logo:1,fondo:1,quien:''};
+function actualizarJerarquia(beat,dt){
+  let lg='hero',fd='hero';
+  if(ajustes.jerarquia&&!(clips.actual&&(clips.actual===clips.tema||usaClips()))){   // con video, el video ya manda
+    const m=MOODS[ajustes.mood]||{},sec=estado.seccion,j=Object.assign({},JER_BASE[sec],(m.jerarquia||{})[sec]);
+    lg=j.logo;fd=j.fondo;
+    if(lg==='pulso')lg=mod(beat-estado.inicio,32)<4?'hero':'oculto';
+    const ps=patrones(beat);if(ps.includes('lavado')||ps.includes('contraluz'))lg='hero';   // la silueta es el punto focal
+  }
+  const k=1-Math.exp(-dt/0.3),L=NIVEL[lg]||NIVEL.hero,F=NIVEL[fd]||NIVEL.hero;
+  jer.esc=lerp(jer.esc,L.esc,k);jer.logo=lerp(jer.logo,L.alfa,k);jer.fondo=lerp(jer.fondo,F.fondo,k);jer.quien=lg==='hero'?'logo':'fondo';
+}
+
 /* pausa: cuando Traktor se para, la imagen se queda quieta; al volver, el motor sigue desde el mismo golpe
    (el tema también sigue desde donde se paró), así la frase no se descuadra */
 const pausa={quieto:false,manual:false,reloj:false,decks:{},silencioDesde:null,silencio:false,beat:0,desdeInicio:false,por:''};
@@ -3037,7 +3058,7 @@ if(document.fonts&&document.fonts.ready)document.fonts.ready.then(dibujarMarca);
 if(reloj.fuente==='midi')activarMidi();
 programar();
 
-window.__motorPR={armarPrompt,estado,reloj,audio,ajustes,pausa,entradaControl,leerMandos,vigilarPausa,midi,vis,det,clips,golpes,abrirGolpes,tDeGolpe,golpeDeT,LOGO,dibujarLogo,pedirSeccion,aplicarSeccion,fijarTension,agregarClips,lanzarTema,pararTema,moverTema,pedirMood,aplicarMood,lanzarFrase,usarLogoSvg,fuentePropia};
+window.__motorPR={jer,armarPrompt,estado,reloj,audio,ajustes,pausa,entradaControl,leerMandos,vigilarPausa,midi,vis,det,clips,golpes,abrirGolpes,tDeGolpe,golpeDeT,LOGO,dibujarLogo,pedirSeccion,aplicarSeccion,fijarTension,agregarClips,lanzarTema,pararTema,moverTema,pedirMood,aplicarMood,lanzarFrase,usarLogoSvg,fuentePropia};
 })();
 </script>
 </body>
