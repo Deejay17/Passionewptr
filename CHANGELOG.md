@@ -4,6 +4,12 @@ Qué cambió en cada commit, de lo más nuevo a lo más viejo. Cada entrada llev
 
 ## 2026-10-12
 
+### Lector de pistas [5b9c380]
+- [Lector de pistas](visuales/fabrica/lector-de-pistas.html), página nueva de la fábrica: se le arrastra una canción y encuentra el BPM, el 1 y las secciones por compases (intro, groove, break, subida y drop), con un mapa de la canción para escucharla con clic en los tiempos.
+- Arma la lista de videos que hay que pedir para esa canción: un prompt de protocolo por rol, con el mood elegido, el nombre del archivo y las tomas de 8 s que hacen falta (la subida larga sale en varias tomas encadenadas). Una canción suele salir con 5 videos y 6 tomas, frente a las 20 o 30 de un video del tema entero.
+- Da también la hoja para el motor: cuántos compases poner en la subida, las teclas y los hotcues para Traktor.
+- Las secciones se corrigen a mano (cambiar la sección o mover su inicio un compás), igual que el tempo (× 2, ÷ 2) y el 1. La canción no sale del navegador.
+
 ### Jerarquía visual [c57119c]
 - Un solo protagonista a la vez: el logo manda en el intro y en el break, el fondo en el groove y en la subida (el logo más chico y tenue), y en el drop el logo vuelve a mandar solo en los 4 primeros tiempos de cada frase. Cuando el fondo lo deja en silueta, el logo vuelve al frente.
 - Cada mood puede cambiar el reparto: Líneas deja siempre el logo al frente, Perreo lo manda al fondo en el groove y Cruz lo hace golpear en el groove.
