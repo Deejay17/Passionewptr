@@ -11,7 +11,7 @@ Los visuales son de dos clases: los **procedurales**, que el motor dibuja en viv
 | **Luz del momentum** | El instante más luminoso del video es el que cae en el 1 (en una subida, el blanco final) | El motor pone ahí el momentum |
 | **Nombre del archivo** | `rol_mood_idea_120bpm_4c_m4s.mp4`: rol, BPM, compases y el segundo del momentum (`m4s`) | El motor lo coloca en su sección, lo amarra y busca la luz cerca de ese segundo |
 
-El **generador** está en el motor (grupo *Prompt para video*): rol + mood + qué se ve → el prompt y el nombre. Los colores salen de la paleta del mood, con palabras, y si no escribes nada usa la escena del mood (el humo a contraluz, la catedral, las hélices de puntos…).
+El **generador** está en el motor (grupo *Prompt para video*): rol + mood + qué se ve → el prompt y el nombre. Para una canción entera, el [Lector de pistas](lector-de-pistas.html) lee el audio y arma la lista de una vez, con los roles que tiene la canción y la subida en las tomas que pida su largo. Los colores salen de la paleta del mood, con palabras, y si no escribes nada usa la escena del mood (el humo a contraluz, la catedral, las hélices de puntos…).
 
 Al **cargar** un video con ese nombre, el motor ya sabe dónde está el momentum y lo afina solo con la luz: no hay que abrir *Golpes*. Si el generador no respetó el testigo, el momentum se queda donde dice el nombre y el tempo a 120, que suele bastar.
 
@@ -24,6 +24,8 @@ Qué hace el generador con cada rol (toma de 8 s):
 | Break | Casi quieto, el centro vacío | 0 s | `break_…_120bpm_4c_m0s` |
 | Subida | Acelera y termina en blanco | 8 s (el blanco final) | `subida_…_120bpm_4c_m8s` |
 | Coro | 8, 4 o 0 tiempos de previos, golpe de luz y energía sostenida | 4, 2 o 0 s | `coro_…_120bpm_2c_m4s` |
+
+Una subida de 8 compases o más sale mejor en varias tomas seguidas (una por cada 4 compases, hasta 4), cada una desde el último fotograma de la anterior y con el blanco solo al final de la última. Unidas, el nombre lleva el total: `subida_…_120bpm_8c_m16s`. El Lector de pistas las escribe ya repartidas.
 
 Si unes tomas o pasas el video por `conformar.sh`, conserva el final del nombre (`_120bpm_…_m…s`) o vuelve a marcar el momentum en *Golpes*.
 

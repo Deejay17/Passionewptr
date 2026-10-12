@@ -11,6 +11,8 @@ guion  →  producción (IA, 3D o grabación)  →  conformar.sh  →  motor / R
 3. **Conformar.** `conformar.sh` lo deja en N compases exactos del BPM, con un empalme que no se nota, al tamaño de la pantalla y con el BPM en el nombre.
 4. **Al motor.** Se arrastra la carpeta: los loops rotan por sección, los temas se amarran al tempo de la sesión y las subidas terminan justo en el drop.
 
+**[Lector de pistas](lector-de-pistas.html)**: ábrelo en Chrome y arrastra una canción. Lee el BPM, el 1 y las secciones (intro, groove, break, subida y drop), y te da los videos que hay que pedir para esa canción, con su prompt, su nombre y el número de tomas de 8 s. Así solo se generan las tomas que el motor va a usar. Las secciones se corrigen a mano si hace falta y todo se rehace solo; la canción no sale de tu ordenador.
+
 **Base de prompt** con el testigo del ritmo (un puntito que destella en cada tiempo) y la luz del momentum, para que el motor encaje el clip solo: [`base-de-prompt.md`](base-de-prompt.md).
 
 **Cada video tiene un rol** (intro, groove, break, subida o coro) que se decide en el guion, da forma al prompt y va en el nombre del archivo: [`roles.md`](roles.md). Para que el video se emocione en el coro (prompt por compases, tomas encadenadas, subida que cierra en el drop): [`subida-y-coro.md`](subida-y-coro.md).
