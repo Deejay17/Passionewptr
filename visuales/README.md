@@ -6,13 +6,17 @@ La idea es que la narrativa del set ya venga programada, en lugar de montarla cl
 
 | Sección | Qué hace la imagen |
 |---|---|
-| **Intro** | El logo se dibuja trazo a trazo durante 4 compases; de fondo, la onda de kick suave |
-| **Groove** | Color base. El logo late con cada kick (su onda se "dispara"); barras y diagonales cambian cada 8 compases |
-| **Break** | Colores fríos y desaturados, trazos que flotan y se separan, estelas largas, sin pulso |
-| **Subida** | La tensión sube sola durante N compases: color hacia el de tensión, trazos que se abren y vibran, redoble visual que acelera (negras → corcheas → semicorcheas), strobe en la segunda mitad y blackout en el último tiempo |
-| **Drop** | Golpe de flash, color de acento, trazos apretados, onda de kick en espejo. Dura 16 compases y vuelve solo al groove |
+| **Intro** | El logo se dibuja trazo a trazo durante 4 compases sobre un campo de partículas |
+| **Groove** | Color base. El logo late con cada kick (su onda se "dispara"); el fondo pasa por barras, haces de luz y diagonales cada 8 compases |
+| **Break** | Colores fríos y desaturados, trazos que flotan y se separan, partículas con estelas largas, sin pulso |
+| **Subida** | La tensión sube sola durante N compases: color hacia el de tensión, trazos que se abren y vibran, haces que barren cada vez más rápido, redoble visual que acelera (negras → corcheas → semicorcheas), strobe en la segunda mitad y blackout en el último tiempo |
+| **Drop** | Golpe de flash y la pantalla entera del color de acento con el logo en silueta negra (4 compases), luego onda de kick en espejo y barras. Dura 16 compases y vuelve solo al groove |
 
-Son dos capas, como pediste: **1 · Fondo** (tus clips de video, o el fondo generativo con barras, diagonales con los ángulos del logo y onda de kick) y **2 · Logo PR**.
+Son dos capas, como pediste:
+- **1 · Fondo**: tus clips de video o el fondo generativo (barras, diagonales con los ángulos del logo, onda de kick, partículas, haces de luz, lavado de color). Se puede partir en **paneles LED** verticales: una imagen que cruza todos, la misma repetida o en espejo.
+- **2 · Logo y texto**: el logo PR, un texto con letras muy espaciadas (nombre del evento, fecha) o los dos. El aire entre letras se abre con la tensión, igual que los trazos del logo.
+
+La paleta por defecto, **Arena**, sale de las referencias: azul para el groove y los breaks, blanco frío para la tensión y rojo para el drop.
 
 ## Uso rápido
 
@@ -27,13 +31,35 @@ Son dos capas, como pediste: **1 · Fondo** (tus clips de video, o el fondo gene
 | `T` | Tap tempo (empieza a tocar en el 1) |
 | `F` / `B` / `S` | Flash / Blackout / Strobe mientras mantienes la tecla |
 | `↑` `↓` | Tensión manual |
-| `C` | Siguiente clip |
+| `C` | Siguiente loop |
+| `L` | Lanzar el siguiente tema en el 1 |
+| `K` | Parar el tema |
+| `X` | Capa 2: logo, texto o ambos |
 | `A` | Modo auto |
 | `Enter` | Pantalla completa |
 
 ## Clips de video
 
-- Pulsa **Elegir carpeta** (o **Añadir clips**, o arrástralos sobre la página). Hay que volver a cargarlos cada vez que abres el motor.
+Pulsa **Elegir carpeta** (o **Añadir clips**, o arrástralos sobre la página). Hay que volver a cargarlos cada vez que abres el motor; el BPM, el tipo y las secciones de cada clip sí se recuerdan por nombre.
+
+Hay dos tipos de clip:
+- **Loop**: corto, rota por sección y corta al compás. Es el relleno.
+- **Tema**: un video largo hecho para una canción. Se lanza en el 1, suena entero sin cortes y al terminar vuelve el relleno. Los videos de más de 30 s, o con `tema` en el nombre, entran como tema.
+
+### Temas sincronizados
+
+Si el clip tiene **BPM** (escrito en la lista o en el nombre, como `tema_intro_128bpm.mp4`), queda amarrado a la sesión:
+- Su velocidad sigue al tempo: un video hecho a 128 en una sesión a 124 va al 96,9 %, y si el DJ sube el pitch, el video sube con él.
+- Su posición sigue a la rejilla de compases y se corrige sola. En las pruebas, el desfase se mantuvo entre 2 y 15 ms, menos de medio cuadro de video.
+
+Para lanzarlo en el momento justo:
+1. Al oír el **primer tiempo del tema**, pulsa `Espacio` (marca el 1).
+2. Pulsa `L` cuando quieras durante los 8 compases siguientes: el video entra ya, alineado a ese 1 (si pasaron 3 segundos, entra 3 segundos adentro).
+3. Si no marcaste el 1, `L` lo hace entrar en el próximo 1.
+4. Si quedó corrido, **−1 compás** / **+1 compás** lo corrige en vivo.
+
+### Loops
+
 - Si el nombre del archivo incluye `intro`, `groove`, `break`, `subida` (o `build`) o `drop`, el clip solo se usa en esa sección. Si no, vale para todas. También se cambia a mano con los botones I G B S D de cada clip.
 - Los cortes caen siempre en el compás: cada 4, 8 o 16 compases (eliges tú). En la subida se aceleran solos (cada 2 compases y luego cada compás) y el drop siempre corta a un clip nuevo. Cada corte arranca en un punto al azar del clip para que no se repita igual.
 - El clip siguiente queda preparado antes del corte. En la subida se deja listo el del drop, así el corte del drop es inmediato y sin cuadros negros.
@@ -47,9 +73,25 @@ Son dos capas, como pediste: **1 · Fondo** (tus clips de video, o el fondo gene
 for f in *.mov; do ffmpeg -i "$f" -c:v libx264 -crf 18 -pix_fmt yuv420p -an "${f%.*}.mp4"; done
 ```
 
+## Cómo producir los videos para que vayan sincronizados
+
+- **Elige un BPM de producción** y ponlo en el nombre: `tema_nombre_128bpm.mp4`. El motor ajusta la velocidad al BPM real de la sesión.
+- **Que dure compases enteros**: a 128 BPM, 1 compás = 1,875 s y **1 minuto = 32 compases exactos**. A 120 BPM, 1 compás = 2 s.
+- **Marca la rejilla en el editor** (After Effects, Premiere, DaVinci): un marcador por compás y la estructura de la canción encima (intro, subida, drop). Si el drop del video cae en el compás 17, caerá en el compás 17 del tema.
+- Para cortes exactos al cuadro: a **120 BPM y 30 fps** un tiempo son 15 cuadros justos; a **125 BPM y 25 fps**, 12 cuadros.
+- El primer cuadro del video es el **1** del compás 1.
+- Exporta en **MP4 H.264**, 1080p, sin audio. Los loops, de 4, 8 o 16 compases.
+
 ## Sincronizar con Traktor (Mac)
 
 Los nombres exactos de los menús pueden variar un poco según tu versión de Traktor.
+
+**Qué puede mandar Traktor al motor**
+- **Tempo** (MIDI clock): el BPM y el arranque o parada.
+- **Eventos** (Controller Manager → Generic MIDI → *Add Out*): el estado de Play de cada deck y de los hotcues, entre otros. Se pueden mapear en el grupo *MIDI* a *Lanzar tema*, *Marcar el 1* o *Drop*: por ejemplo, el hotcue del drop dispara el drop visual.
+- **Audio**: para el kick y el modo auto.
+- **No manda** qué canción suena ni en qué punto de la canción va. Por eso el 1 lo marca una persona (`Espacio`) o un hotcue.
+- Sin MIDI también funciona: alguien en el ordenador con tap tempo, `Espacio`, `L` y las teclas `1`–`5`.
 
 **Tempo por MIDI clock**
 1. En *Configuración de Audio MIDI* → *Ventana* → *Mostrar estudio MIDI*, abre **IAC Driver** y marca *El dispositivo está conectado*.
@@ -86,6 +128,11 @@ Todo está en `motor-visual-pr.html`, en bloques comentados:
 | La forma del logo | `LOGO` (coordenadas sobre la imagen original; se cambiará por el vector) |
 | Cuándo cortan los clips | `function tocaCorte` |
 | El tinte de los clips | `function dibujarClip` |
+| Cómo se amarra un clip al tempo | `function amarrar` |
+| Cuándo entra un tema | `function lanzarTema` |
+| Partículas, haces y lavado | `function dibujarParticulas`, `dibujarHaces`, `dibujarLavado` |
+| Los paneles LED | `function componerPaneles` |
+| El texto espaciado | `function dibujarTexto` |
 | La forma de la onda de kick | `function envKick` |
 | Sensibilidad del modo auto | `function autoNarrativa` |
 
