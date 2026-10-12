@@ -4,7 +4,7 @@ Qué cambió en cada commit, de lo más nuevo a lo más viejo. Cada entrada llev
 
 ## 2026-10-12
 
-### El proyecto pasa a ser parte de PRotocolive [sin publicar]
+### El proyecto pasa a ser parte de PRotocolive [1a25cfd]
 - `PROTOCOLIVE.md`: los cuatro módulos de PRotocolive (Screen Mapper, Briefing Exprés, Cue Sheet y Playbook de momentos), qué hace ya el motor en cada uno, qué falta y en qué orden seguir.
 - Los README presentan el motor y la fábrica como software de PRotocolive.
 
