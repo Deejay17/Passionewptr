@@ -148,6 +148,7 @@ audio{width:100%}
 .seg button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
 .clip-bpm{display:inline-flex;align-items:center;gap:4px;font:500 11px/1 var(--f-mono);color:var(--muted)}
 .clip-bpm input[type=number]{width:8ch;padding:3px 5px;font:500 12px/1.2 var(--f-mono)}
+.clip-logo{width:auto;padding:3px 6px;font-size:12px}
 .clip-quitar{margin-left:auto;padding:2px 8px;border:1px solid var(--line);border-radius:3px;background:transparent;color:var(--muted);cursor:pointer;font-size:13px}
 .clip-quitar:hover{color:var(--fg);border-color:var(--muted)}
 .fila-moods{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
@@ -598,7 +599,7 @@ const DROP_COMPASES=16;
 const PULSO={intro:0.5,groove:1,break:0,subida:0,drop:1.4};
 const estado={seccion:'groove',inicio:0,pendiente:null,auto:false,tensionManual:0,
   mantener:{flash:false,blackout:false,strobe:false,invert:false},
-  kick:0,ondaProg:1,flash:0,strobe:0,blackout:0,corte:false,semilla:1,fase:0,moodPend:null,blancoHasta:0,frase:null};
+  kick:0,ondaProg:1,flash:0,strobe:0,blackout:0,corte:false,semilla:1,fase:0,moodPend:null,blancoHasta:0,frase:null,logoAlfa:1,logoEsquina:0};
 
 /* ───────── reloj: posición en tiempos (negras) ───────── */
 const reloj={
@@ -887,7 +888,7 @@ function trazo(ctx,o,ancho,alfa,camino){
   ctx.strokeStyle=rgba(o.color,alfa);ctx.lineWidth=ancho;pintar();
 }
 function dibujarLogo(ctx,W,H,o){
-  const c=LOGO.caja,s=H*o.escala/c.h,cx=c.x+c.w/2,cy=c.y+c.h/2,ox=W/2,oy=H/2+(o.dy||0);
+  const c=LOGO.caja,s=H*o.escala/c.h,cx=c.x+c.w/2,cy=c.y+c.h/2,ox=W/2+(o.dx||0),oy=H/2+(o.dy||0);
   const X=u=>ox+(u-cx)*s,Y=v=>oy+(v-cy)*s,r=azar(o.semilla);
   o.cromo=o.acabado==='cromo'?gradCromo(ctx,ox,oy,c.h*s*0.7,o):null;
   ctx.lineCap='round';
@@ -968,7 +969,7 @@ function usarLogoSvg(texto,nombre,{guardarlo=false,activar=false}={}){
 }
 function dibujarLogoSvg(ctx,W,H,o){
   const L=logoSvg,c=L.caja;if(!L.formas)return;
-  const s=Math.min(H*o.escala/c.h,W*0.92/c.w),cx=c.x+c.w/2,cy=c.y+c.h/2,ox=W/2,oy=H/2+(o.dy||0),r=azar(o.semilla);
+  const s=Math.min(H*o.escala/c.h,W*0.92/c.w),cx=c.x+c.w/2,cy=c.y+c.h/2,ox=W/2+(o.dx||0),oy=H/2+(o.dy||0),r=azar(o.semilla);
   o.cromo=o.acabado==='cromo'?gradCromo(ctx,cx,cy,c.h*0.7,o):null;   // en unidades del SVG: se pinta con el contexto ya escalado
   ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
   if(o.prog<1){ctx.beginPath();ctx.rect(0,0,ox+(c.x+c.w*clamp(o.prog*1.15)-cx)*s,H);ctx.clip();}   // en la intro aparece de izquierda a derecha
@@ -1129,8 +1130,9 @@ const compasDe=c=>240/c.bpm;   // un compás del clip, en segundos
 const minSeg=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
 function bpmDelNombre(n){const m=n.match(/(\d{2,3}(?:[.,]\d+)?)\s*-?\s*bpm/i);if(!m)return null;const b=parseFloat(m[1].replace(',','.'));return b>=60&&b<=200?b:null;}
 function seccionesPorNombre(n){const s=n.toLowerCase(),r=IDS.filter(id=>PALABRAS[id].some(p=>s.includes(p)));return new Set(r.length?r:IDS);}
-function recordarClip(c){memClips[c.nombre]={bpm:c.bpm,tipo:c.tipo,secciones:[...c.secciones]};guardado.escribir('clips',memClips);}
-function fijarTipo(c,t){c.tipo=t;c.video.loop=t==='loop';}
+function recordarClip(c){memClips[c.nombre]={bpm:c.bpm,tipo:c.tipo,secciones:[...c.secciones],logo:c.logoFijo?c.logo:undefined};guardado.escribir('clips',memClips);}
+// los temas son tus videos grandes: por defecto el logo se aparta; sobre los loops (el relleno) va encima
+function fijarTipo(c,t){c.tipo=t;c.video.loop=t==='loop';if(!c.logoFijo)c.logo=t==='tema'?'oculto':'encima';}
 function soltarDeLoops(c){   // deja de usar un clip como loop (pasó a tema, falló o se quitó)
   for(const k in clips.prep)if(clips.prep[k]===c)delete clips.prep[k];
   if(clips.tema===c)return;
@@ -1149,7 +1151,7 @@ function agregarClips(files){
     const c={id:clips.sig++,nombre,video:v,dur:0,error:false,t0:0,inicioBeat:0,
       bpm:m?m.bpm:bpmDelNombre(f.name),
       secciones:m&&m.secciones&&m.secciones.length?new Set(m.secciones):seccionesPorNombre(f.name),
-      tipoFijo:!!m||ES_TEMA.test(nombre)};
+      tipoFijo:!!m||ES_TEMA.test(nombre),logo:m&&m.logo?m.logo:'encima',logoFijo:!!(m&&m.logo)};
     fijarTipo(c,m?m.tipo:ES_TEMA.test(nombre)?'tema':'loop');
     v.addEventListener('loadedmetadata',()=>{
       c.dur=isFinite(v.duration)?v.duration:0;
@@ -1357,7 +1359,10 @@ function pintarClips(){
     inp.value=c.bpm?String(c.bpm):'';inp.setAttribute('aria-label','BPM de '+c.nombre);
     inp.addEventListener('change',()=>{const v=parseFloat(inp.value);c.bpm=v>=60&&v<=200?v:null;inp.value=c.bpm?String(c.bpm):'';recordarClip(c);});
     lb.append(inp,document.createTextNode('BPM'));
-    ctrl.append(seg,lb);
+    const sl=document.createElement('select');sl.className='clip-logo';sl.setAttribute('aria-label','El logo sobre '+c.nombre);
+    for(const[v,et]of[['encima','Logo encima'],['esquina','Logo en la esquina'],['oculto','Sin logo']]){const o=document.createElement('option');o.value=v;o.textContent=et;sl.appendChild(o);}
+    sl.value=c.logo;sl.addEventListener('change',()=>{c.logo=sl.value;c.logoFijo=true;recordarClip(c);});
+    ctrl.append(seg,lb,sl);
     if(c.tipo==='loop'){
       const secs=document.createElement('div');secs.className='clip-secs';secs.setAttribute('role','group');secs.setAttribute('aria-label','Secciones donde se usa '+c.nombre);
       for(const[id,nombre]of SECCIONES){
@@ -1405,19 +1410,21 @@ function escena(ctx,W,H,beat){
     }
     if(pn.n>0)componerPaneles(ctx,capaFondo,W,H,pn);
   }
-  if(ajustes.logo.on&&ajustes.logo.op>0){
+  if(ajustes.logo.on&&ajustes.logo.op>0&&estado.logoAlfa>0.01){
     // sobre un lavado de color, la capa 2 va en negro: silueta, como el público contra la pantalla
-    ctx.globalAlpha=ajustes.logo.op;
-    dibujarCapa2(ctx,W,H,beat,lavado?mezcla(pal.fondo,[0,0,0],0.4):vis.colLogo,lavado?0:vis.glow,conClip&&!lavado,ajustes.logo.acabado==='cromo'&&!lavado);
+    ctx.globalAlpha=ajustes.logo.op*estado.logoAlfa;
+    dibujarCapa2(ctx,W,H,beat,lavado?mezcla(pal.fondo,[0,0,0],0.4):vis.colLogo,lavado?0:vis.glow,conClip&&!lavado,ajustes.logo.acabado==='cromo'&&!lavado,estado.logoEsquina);
   }
   ctx.globalAlpha=1;
   dibujarFrase(ctx,W,H,beat);
 }
-function dibujarCapa2(ctx,W,H,beat,color,glow,recorte,cromo){
-  const modo=ajustes.texto.modo;
+function dibujarCapa2(ctx,W,H,beat,color,glow,recorte,cromo,esquina=0){
+  // esquina 0 → centro; 1 → pequeño abajo a la derecha, dentro de la franja segura, para no tapar el video
+  const modo=esquina>0.5?'logo':ajustes.texto.modo;
   if(modo!=='texto'){
     const junto=modo==='ambos';
-    dibujarLogoActual(ctx,W,H,{escala:ajustes.logo.tam*(junto?0.74:1)*vis.zoom*(1+0.025*estado.kick),dy:junto?-H*0.09:0,color,spread:vis.spread,jitter:vis.jitter,flotar:vis.flotar,
+    dibujarLogoActual(ctx,W,H,{escala:lerp(ajustes.logo.tam*(junto?0.74:1)*vis.zoom,0.16,esquina)*(1+0.025*estado.kick),
+      dx:esquina*W*0.41,dy:lerp(junto?-H*0.09:0,H*0.18,esquina),color,spread:vis.spread,jitter:vis.jitter,flotar:vis.flotar,
       prog:estado.seccion==='intro'?clamp((beat-estado.inicio)/16):1,ondaProg:estado.ondaProg,ondaGan:1+0.45*clamp(estado.kick,0,1.5),
       kick:estado.kick,glow,semilla:estado.semilla,tiempo:performance.now()/1000,oscuro:pal.oscuro&&glow>0,recorte,acabado:cromo?'cromo':'luz'});
   }
@@ -1618,9 +1625,11 @@ const ACCIONES=[
   {id:'temaMenos',nombre:'Tema −1 compás',tipo:'disparo',fn:()=>moverTema(-1)},
   {id:'temaMas',nombre:'Tema +1 compás',tipo:'disparo',fn:()=>moverTema(1)},
   {id:'frase',nombre:'Frase de impacto',tipo:'disparo',fn:()=>lanzarFrase()},
+  {id:'logo',nombre:'Logo visible o apagado',tipo:'disparo',fn:()=>alternarLogo()},
   {id:'mood',nombre:'Siguiente mood',tipo:'disparo',fn:()=>pedirMood(siguienteMood())},
   ...ORDEN_MOODS.map(id=>({id:'mood_'+id,nombre:'Mood '+MOODS[id].nombre,tipo:'disparo',fn:()=>pedirMood(id)}))
 ];
+function alternarLogo(){ajustes.logo.on=!ajustes.logo.on;$('#chkLogo').checked=ajustes.logo.on;guardar();aviso(ajustes.logo.on?'Logo visible':'Logo apagado');}
 function ciclarCapa2(){
   const orden=['logo','texto','ambos'];
   ajustes.texto.modo=orden[(orden.indexOf(ajustes.texto.modo)+1)%orden.length];
@@ -1739,6 +1748,7 @@ function teclaAbajo(e){
     case 'x':ciclarCapa2();break;
     case 'm':pedirMood(siguienteMood());break;
     case 'p':lanzarFrase();break;
+    case 'o':alternarLogo();break;
     case 'ArrowUp':e.preventDefault();fijarTension(estado.tensionManual+0.1);break;
     case 'ArrowDown':e.preventDefault();fijarTension(estado.tensionManual-0.1);break;
     case 'Enter':e.preventDefault();pantallaCompleta();break;
@@ -1768,7 +1778,7 @@ function construirUI(){
     l.querySelector('input').addEventListener('input',e=>{ajustes.colores[k]=e.target.value;ajustes.paleta='personal';selP.value='personal';leerPaleta();dibujarMarca();pintarMoods();guardar();});
   }
   const atajos=[['1 – 5','Intro, Groove, Break, Subida, Drop'],['Espacio','Marcar el 1 del compás'],['T','Tap tempo (empieza en el 1)'],
-    ['F','Flash (mantener)'],['B','Blackout (mantener)'],['S','Strobe (mantener)'],['I','Invert (mantener)'],['↑ ↓','Tensión manual'],['C','Siguiente loop'],['L','Lanzar el siguiente tema (en el 1)'],['K','Parar el tema'],['M','Siguiente mood'],['P','Frase de impacto'],['X','Capa 2: logo, texto o ambos'],['A','Modo auto'],['Enter','Pantalla completa']];
+    ['F','Flash (mantener)'],['B','Blackout (mantener)'],['S','Strobe (mantener)'],['I','Invert (mantener)'],['↑ ↓','Tensión manual'],['C','Siguiente loop'],['L','Lanzar el siguiente tema (en el 1)'],['K','Parar el tema'],['M','Siguiente mood'],['P','Frase de impacto'],['O','Logo visible o apagado'],['X','Capa 2: logo, texto o ambos'],['A','Modo auto'],['Enter','Pantalla completa']];
   const dl=$('#atajos');
   for(const[t,d]of atajos){const dt=document.createElement('dt'),kb=document.createElement('kbd'),dd=document.createElement('dd');kb.textContent=t;dt.appendChild(kb);dd.textContent=d;dl.append(dt,dd);}
   const dm=$('#descMoods');
@@ -2021,6 +2031,8 @@ function cuadro(){
   actualizarVis(beat,dt);
   decaer(dt,segBeat,beat);
   estado.fase+=dt*vis.velocidad;
+  {const a=clips.actual,deClip=a&&(a===clips.tema||usaClips())?a.logo:'encima',k=1-Math.exp(-dt/0.35);
+   estado.logoAlfa=lerp(estado.logoAlfa,deClip==='oculto'?0:1,k);estado.logoEsquina=lerp(estado.logoEsquina,deClip==='esquina'?1:0,k);}
   avanzarClips();
   dibujarSalida(beat);
   actualizarUI(beat,a);

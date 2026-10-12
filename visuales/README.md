@@ -54,6 +54,7 @@ Sacro, Bio-Hazard y Perreo son los bloques del show de Halloween y mantienen el 
 | `K` | Parar el tema |
 | `M` | Siguiente mood |
 | `P` | Frase de impacto |
+| `O` | Logo visible o apagado |
 | `X` | Capa 2: logo, texto o ambos |
 | `A` | Modo auto |
 | `Enter` | Pantalla completa |
@@ -94,6 +95,10 @@ Para lanzarlo en el momento justo:
 2. Pulsa `L` cuando quieras durante los 8 compases siguientes: el video entra ya, alineado a ese 1 (si pasaron 3 segundos, entra 3 segundos adentro).
 3. Si no marcaste el 1, `L` lo hace entrar en el próximo 1.
 4. Si quedó corrido, **−1 compás** / **+1 compás** lo corrige en vivo.
+
+### El logo sobre los videos
+
+Cada clip decide qué hace el logo encima: **encima**, **en la esquina** (pequeño, abajo a la derecha) u **oculto**. Los temas, que son tus videos grandes, vienen con el logo oculto y los loops con el logo encima. El cambio se hace con un fundido suave y se recuerda por nombre de archivo. En los whiteouts el logo vuelve a aparecer en silueta. La tecla `O` apaga o enciende el logo al instante.
 
 ### Loops
 
