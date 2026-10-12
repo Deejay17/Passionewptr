@@ -435,6 +435,14 @@ body.soltando .escena{outline:2px dashed var(--live);outline-offset:4px}
         <label class="campo">Opacidad<input type="range" id="rngLogo" min="0" max="100"></label>
         <label class="campo">Tamaño<input type="range" id="rngTam" min="20" max="95"></label>
         <label class="check"><input type="checkbox" id="chkJerarquia"> Jerarquía visual: un protagonista a la vez. El fondo manda en el groove, la subida y el drop (ahí el logo vuelve en el 1 de cada frase); el logo manda en el intro, el break y siempre que está en silueta</label>
+        <label class="campo">Borde del logo
+          <select id="selBorde">
+            <option value="ambos">Contorno y sombra</option>
+            <option value="contorno">Contorno oscuro</option>
+            <option value="sombra">Sombra</option>
+            <option value="no">Sin borde</option>
+          </select>
+        </label>
         <label class="campo">Logo
           <select id="selFuenteLogo">
             <option value="trazado">Trazado PR (con la onda de kick animada)</option>
@@ -715,7 +723,7 @@ const MOODS={
 };
 const ORDEN_MOODS=Object.keys(MOODS);
 const BASE={bpm:126,fuente:'interno',compasesSubida:8,autoDrop:true,blackoutAntes:true,strobeAuto:true,strobeSeguro:true,
-  paleta:'arena',fondo:{on:true,op:0.8,patron:'auto',fuente:'clips'},logo:{on:true,op:1,tam:0.62,acabado:'luz',fuente:'trazado',grosor:2},pulsoAudio:true,umbralKick:6,
+  paleta:'arena',fondo:{on:true,op:0.8,patron:'auto',fuente:'clips'},logo:{on:true,op:1,tam:0.62,acabado:'luz',fuente:'trazado',grosor:2,borde:'ambos'},pulsoAudio:true,umbralKick:6,
   clips:{cada:8,tinte:true,velocidad:true},paneles:{n:0,hueco:0.18,modo:'continuo'},texto:{modo:'logo',l1:'PR',l2:'DJ SET'},
   mood:'escenario',moodEnDrop:false,whiteoutDrop:0,siluetaBlanco:true,
   salida:{formato:'libre',ancla:'centro',zonaSegura:true,forma:'mood'},
@@ -1030,11 +1038,29 @@ function gradCromo(ctx,cx,cy,r,o){   // reflejos de cromo negro que giran despac
     g.addColorStop(p,rgba(mezcla(mezcla([0,0,0],[255,255,255],l),o.color,0.22),1));   // con un toque del color de la sección
   return g;
 }
-function trazo(ctx,o,ancho,alfa,camino){
-  const pintar=()=>camino?ctx.stroke(camino):ctx.stroke();
-  if(o.recorte){   // contorno oscuro para que el logo se lea sobre cualquier clip
-    ctx.strokeStyle=rgba(pal.fondo,0.6*alfa);ctx.lineWidth=ancho*4.5;pintar();
+// el borde separa el logo del fondo y la P y la R de sus ondas: contorno oscuro (un canal de al menos medio por ciento
+// del alto a cada lado, que corta las ondas y lo que pase por detrás), sombra debajo o, en silueta, un filo de luz detrás,
+// como el contraluz que la recorta. pintar() traza el camino; rellenar(), en un SVG con rellenos, pinta la forma entera
+function bordeLogo(ctx,o,ancho,alfa,pintar,fino,rellenar){
+  const b=o.borde||'no',contorno=o.recorte||b==='contorno'||b==='ambos',sombra=b==='sombra'||b==='ambos';
+  if(!contorno&&!sombra)return;
+  const H=ctx.canvas.height,u=1/(o.escalaCtx||1),canal=fino?ancho:Math.max(ancho*1.8,H*0.005*u);
+  ctx.save();
+  if(o.silueta&&b!=='no'){
+    const filo=mezcla(pal.tension,[255,255,255],0.3);
+    ctx.shadowColor=rgba(filo,0.9*alfa);ctx.shadowBlur=H*0.014;
+    ctx.strokeStyle=rgba(filo,0.55*alfa);ctx.lineWidth=ancho+canal*0.8;pintar();
+  }else{
+    if(sombra){ctx.shadowColor=rgba([0,0,0],0.85*alfa);ctx.shadowBlur=H*0.022;ctx.shadowOffsetY=H*0.007;}
+    const oscuro=rgba(mezcla(pal.fondo,[0,0,0],0.6),(contorno?0.95:0.6)*alfa),w=contorno?ancho+2*canal:ancho*1.2;
+    ctx.strokeStyle=oscuro;if(w>0){ctx.lineWidth=w;pintar();}
+    if(rellenar){ctx.fillStyle=oscuro;rellenar();}
   }
+  ctx.restore();
+}
+function trazo(ctx,o,ancho,alfa,camino,fino){   // fino: las ondas, con un contorno más delgado que el de las letras
+  const pintar=()=>camino?ctx.stroke(camino):ctx.stroke();
+  bordeLogo(ctx,o,ancho,alfa,pintar,fino);
   if(o.cromo){   // bisel oscuro, el metal encima y un destello con cada kick
     ctx.strokeStyle=rgba([0,0,0],0.9*alfa);ctx.lineWidth=ancho*2.2;pintar();
     ctx.save();ctx.globalAlpha*=alfa;ctx.strokeStyle=o.cromo;ctx.lineWidth=ancho*1.35;pintar();ctx.restore();
@@ -1057,7 +1083,7 @@ function dibujarLogo(ctx,W,H,o){
   if(pOnda>0){
     ctx.beginPath();
     for(const w of LOGO.ondas)trazarOnda(ctx,X(w.x),Y(w.y),s,s,pOnda,1,o.ondaGan);
-    trazo(ctx,o,Math.max(0.8,0.7*s),0.85);
+    trazo(ctx,o,Math.max(0.8,0.7*s),0.85,undefined,true);
   }
   ctx.beginPath();
   LOGO.trazos.forEach((tr,j)=>{
@@ -1135,15 +1161,24 @@ function dibujarLogoSvg(ctx,W,H,o){
   ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
   if(o.prog<1){ctx.beginPath();ctx.rect(0,0,ox+(c.x+c.w*clamp(o.prog*1.15)-cx)*s,H);ctx.clip();}   // en la intro aparece de izquierda a derecha
   const abre=(o.spread-1)*0.06,vibra=o.jitter*0.6,g=ajustes.logo.grosor*(1+0.35*o.kick);
-  for(const f of L.formas){
-    // con la tensión cada trazo se separa del centro y vibra; en el break flota
-    const dx=(f.cx-cx)*abre+(vibra?(r()*2-1)*vibra:0)+(o.flotar?Math.sin(o.tiempo*0.8+f.cx)*o.flotar*0.4:0);
-    const dy=(f.cy-cy)*abre+(vibra?(r()*2-1)*vibra:0)+(o.flotar?Math.cos(o.tiempo*0.6+f.cy)*o.flotar*0.4:0);
-    ctx.save();ctx.translate(ox+dx*s,oy+dy*s);ctx.scale(s,s);ctx.translate(-cx,-cy);
-    if(f.relleno){ctx.fillStyle=o.cromo||rgba(o.color,1);ctx.fill(f.camino);}
-    if(f.trazo)trazo(ctx,o,f.ancho*g,1,f.camino);
+  // con la tensión cada trazo se separa del centro y vibra; en el break flota
+  const mov=L.formas.map(f=>[
+    (f.cx-cx)*abre+(vibra?(r()*2-1)*vibra:0)+(o.flotar?Math.sin(o.tiempo*0.8+f.cx)*o.flotar*0.4:0),
+    (f.cy-cy)*abre+(vibra?(r()*2-1)*vibra:0)+(o.flotar?Math.cos(o.tiempo*0.6+f.cy)*o.flotar*0.4:0)]);
+  o.escalaCtx=s;
+  const limpio=Object.assign({},o,{borde:'no',recorte:false});
+  // dos pasadas: primero el borde de todas las formas y luego las formas, para que no queden costuras entre piezas que se tocan
+  for(const pasada of[0,1])L.formas.forEach((f,i)=>{
+    ctx.save();ctx.translate(ox+mov[i][0]*s,oy+mov[i][1]*s);ctx.scale(s,s);ctx.translate(-cx,-cy);
+    if(!pasada){
+      if(f.relleno)bordeLogo(ctx,o,0,1,()=>ctx.stroke(f.camino),false,()=>ctx.fill(f.camino));
+      if(f.trazo)bordeLogo(ctx,o,f.ancho*g,1,()=>ctx.stroke(f.camino));
+    }else{
+      if(f.relleno){ctx.fillStyle=o.cromo||rgba(o.color,1);ctx.fill(f.camino);}
+      if(f.trazo)trazo(ctx,limpio,f.ancho*g,1,f.camino);
+    }
     ctx.restore();
-  }
+  });
   ctx.restore();
 }
 const dibujarLogoActual=(ctx,W,H,o)=>ajustes.logo.fuente==='svg'&&logoSvg.formas?dibujarLogoSvg(ctx,W,H,o):dibujarLogo(ctx,W,H,o);
@@ -2169,7 +2204,7 @@ function escena(ctx,W,H,beat){
   if(ajustes.logo.on&&ajustes.logo.op>0&&estado.logoAlfa>0.01){
     // sobre un lavado de color, la capa 2 va en negro: silueta, como el público contra la pantalla
     ctx.globalAlpha=ajustes.logo.op*estado.logoAlfa*(lavado?1:jer.logo);   // una silueta no se atenúa: perdería el contraste
-    dibujarCapa2(ctx,W,H,beat,lavado?mezcla(pal.fondo,[0,0,0],0.4):vis.colLogo,lavado?0:vis.glow,conClip&&!lavado,ajustes.logo.acabado==='cromo'&&!lavado,estado.logoEsquina);
+    dibujarCapa2(ctx,W,H,beat,lavado?mezcla(pal.fondo,[0,0,0],0.4):vis.colLogo,lavado?0:vis.glow,conClip&&!lavado,ajustes.logo.acabado==='cromo'&&!lavado,estado.logoEsquina,lavado);
   }
   ctx.globalAlpha=1;
   dibujarFrase(ctx,W,H,beat);
@@ -2184,7 +2219,7 @@ function recortarForma(ctx,W,H,forma){
   }
   ctx.clip('nonzero');
 }
-function dibujarCapa2(ctx,W,H,beat,color,glow,recorte,cromo,esquina=0){
+function dibujarCapa2(ctx,W,H,beat,color,glow,recorte,cromo,esquina=0,silueta=false){
   // esquina 0 → centro; 1 → pequeño abajo a la derecha, dentro de la franja segura, para no tapar el video
   const modo=esquina>0.5?'logo':ajustes.texto.modo;
   if(modo!=='texto'){
@@ -2192,9 +2227,10 @@ function dibujarCapa2(ctx,W,H,beat,color,glow,recorte,cromo,esquina=0){
     dibujarLogoActual(ctx,W,H,{escala:lerp(ajustes.logo.tam*(junto?0.74:1)*vis.zoom*jer.esc,0.16,esquina)*(1+0.025*estado.kick),
       dx:esquina*W*0.41,dy:lerp(junto?-H*0.09:0,H*0.18,esquina),color,spread:vis.spread,jitter:vis.jitter,flotar:vis.flotar,
       prog:estado.seccion==='intro'?clamp((beat-estado.inicio)/16):1,ondaProg:estado.ondaProg,ondaGan:1+0.45*clamp(estado.kick,0,1.5),
-      kick:estado.kick,glow,semilla:estado.semilla,tiempo:performance.now()/1000,oscuro:pal.oscuro&&glow>0,recorte,acabado:cromo?'cromo':'luz'});
+      kick:estado.kick,glow,semilla:estado.semilla,tiempo:performance.now()/1000,oscuro:pal.oscuro&&glow>0,recorte,acabado:cromo?'cromo':'luz',
+      borde:ajustes.logo.borde,silueta});
   }
-  if(modo!=='logo')dibujarTexto(ctx,W,H,{color,glow,recorte,abajo:modo==='ambos'});
+  if(modo!=='logo')dibujarTexto(ctx,W,H,{color,glow,recorte,abajo:modo==='ambos',borde:ajustes.logo.borde,silueta});
 }
 
 /* frases de impacto: tipografía monumental de lado a lado, una palabra por tiempo o la frase entera */
@@ -2296,7 +2332,8 @@ function dibujarTexto(ctx,W,H,o){
   ctx.save();
   const col=o.glow>0?mezcla(o.color,[255,255,255],0.55):o.color;   // más claro que el logo; en negativo, negro
   ctx.textBaseline='middle';ctx.fillStyle=rgba(col,1);
-  if(o.recorte){ctx.shadowColor=rgba(pal.fondo,0.85);ctx.shadowBlur=H*0.02;}
+  if(o.silueta&&o.borde&&o.borde!=='no'){ctx.shadowColor=rgba(mezcla(pal.tension,[255,255,255],0.3),0.8);ctx.shadowBlur=H*0.014;}
+  else if(o.recorte||o.borde==='sombra'||o.borde==='ambos'){ctx.shadowColor=rgba([0,0,0],0.85);ctx.shadowBlur=H*0.022;ctx.shadowOffsetY=H*0.007;}
   else if(o.glow>0&&pal.oscuro){ctx.shadowColor=rgba(o.color,0.7*o.glow);ctx.shadowBlur=H*0.03;}
   if(l1)textoEspaciado(ctx,l1,t1,600,t1*0.32*apertura,W/2,y1);
   if(l2){ctx.globalAlpha*=0.85;textoEspaciado(ctx,l2,t2,500,t2*0.5*apertura,W/2,l1?y2:y1);}
@@ -2309,7 +2346,7 @@ function capasFinales(ctx,W,H,beat){   // invert, flash, strobe y blackout van e
     ctx.fillStyle=rgba(pal.flash,fl);ctx.fillRect(0,0,W,H);
     if(ajustes.siluetaBlanco&&fl>0.35&&ajustes.logo.on){   // sobre el blanco, la frase o el logo quedan en silueta negra
       ctx.save();ctx.globalAlpha=clamp((fl-0.35)/0.4);
-      if(!textoFrase(ctx,W,H,beat,[0,0,0]))dibujarCapa2(ctx,W,H,beat,[0,0,0],0,false,false);
+      if(!textoFrase(ctx,W,H,beat,[0,0,0]))dibujarCapa2(ctx,W,H,beat,[0,0,0],0,false,false,0,true);
       ctx.restore();
     }
   }
@@ -2686,7 +2723,7 @@ function sincronizarControles(){
   $('#selModoFrase').value=ajustes.frases.modo;$('#chkFraseDrop').checked=ajustes.frases.enDrop;
   $('#selTipoFrase').value=ajustes.tipos.frases==='propia'&&!fuentePropia.cargada?'mood':ajustes.tipos.frases;
   $('#selTipoTexto').value=ajustes.tipos.texto==='propia'&&fuentePropia.cargada?'propia':'barlow';
-  $('#selFuenteLogo').value=ajustes.logo.fuente==='svg'&&logoSvg.formas?'svg':'trazado';$('#rngGrosor').value=ajustes.logo.grosor;$('#selAcabado').value=ajustes.logo.acabado;
+  $('#selFuenteLogo').value=ajustes.logo.fuente==='svg'&&logoSvg.formas?'svg':'trazado';$('#rngGrosor').value=ajustes.logo.grosor;$('#selAcabado').value=ajustes.logo.acabado;$('#selBorde').value=ajustes.logo.borde;
   $('#selFormato').value=ajustes.salida.formato;$('#selForma').value=ajustes.salida.forma||'mood';$('#selAncla').value=ajustes.salida.ancla;$('#chkZona').checked=ajustes.salida.zonaSegura;
   aplicarFormato();
   fijarTension(estado.tensionManual);
@@ -2759,6 +2796,7 @@ function enlazar(){
   cambio('#fileSvg',async e=>{const f=e.target.files&&e.target.files[0];e.target.value='';if(f)await cargarSvgArchivo(f);});
   cambio('#rngGrosor',e=>{ajustes.logo.grosor=+e.target.value;dibujarMarca();guardar();},'input');
   cambio('#selAcabado',e=>{ajustes.logo.acabado=e.target.value;guardar();});
+  cambio('#selBorde',e=>{ajustes.logo.borde=e.target.value;guardar();dibujarMarca();});
   cambio('#selFormato',e=>{ajustes.salida.formato=e.target.value;aplicarFormato();guardar();});
   cambio('#selAncla',e=>{ajustes.salida.ancla=e.target.value;guardar();});
   cambio('#selForma',e=>{ajustes.salida.forma=e.target.value;guardar();});
