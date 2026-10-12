@@ -316,7 +316,16 @@ body.soltando .escena{outline:2px dashed var(--live);outline-offset:4px}
         </label>
         <label class="check"><input type="checkbox" id="chkFraseDrop"> Lanzar la siguiente frase en cada drop</label>
         <div class="fila"><button class="btn" type="button" id="btnFrase2"><kbd>P</kbd> Lanzar frase</button></div>
-        <p class="ayuda">Tipografía monumental condensada (en el mood Perreo, de brocha). Entra en el siguiente tiempo y apaga el fondo mientras dura.</p>
+        <label class="campo">Tipografía
+          <select id="selTipoFrase">
+            <option value="mood">La del mood (monumental o brocha)</option>
+            <option value="monumental">Monumental condensada</option>
+            <option value="brocha">Brocha</option>
+            <option value="propia">Propia (cargada)</option>
+          </select>
+        </label>
+        <div class="fila"><button class="btn chico" type="button" id="btnFuente">Cargar tipografía</button><input type="file" id="fileFuente" accept=".ttf,.otf,.woff,.woff2,font/*" hidden><span class="ayuda" id="txtFuente">Ninguna cargada</span></div>
+        <p class="ayuda">Puedes cargar tu tipografía (TTF, OTF, WOFF o WOFF2) o arrastrarla a la página; se queda en este navegador. La frase entra en el siguiente tiempo y apaga el fondo mientras dura.</p>
       </div>
     </details>
 
@@ -373,6 +382,12 @@ body.soltando .escena{outline:2px dashed var(--live);outline-offset:4px}
         </label>
         <label class="campo">Texto, línea 1<input type="text" id="txtL1" maxlength="40" autocomplete="off"></label>
         <label class="campo">Texto, línea 2<input type="text" id="txtL2" maxlength="60" autocomplete="off"></label>
+        <label class="campo">Tipografía del texto
+          <select id="selTipoTexto">
+            <option value="barlow">Barlow espaciada</option>
+            <option value="propia">Propia (cargada en Frases de impacto)</option>
+          </select>
+        </label>
         <label class="campo">Opacidad<input type="range" id="rngLogo" min="0" max="100"></label>
         <label class="campo">Tamaño<input type="range" id="rngTam" min="20" max="95"></label>
         <label class="campo">Logo
@@ -566,7 +581,8 @@ const BASE={bpm:126,fuente:'interno',compasesSubida:8,autoDrop:true,blackoutAnte
   clips:{cada:8,tinte:true,velocidad:true},paneles:{n:0,hueco:0.18,modo:'continuo'},texto:{modo:'logo',l1:'PR',l2:'DJ SET'},
   mood:'escenario',moodEnDrop:false,whiteoutDrop:0,siluetaBlanco:true,
   salida:{formato:'libre',ancla:'centro',zonaSegura:true},
-  frases:{lista:['HOW DO YOU FEEL RIGHT NOW','LA MÁQUINA','PETER ROMO'],modo:'palabras',enDrop:false,idx:0}};
+  frases:{lista:['HOW DO YOU FEEL RIGHT NOW','LA MÁQUINA','PETER ROMO'],modo:'palabras',enDrop:false,idx:0},
+  tipos:{frases:'mood',texto:'barlow'}};
 const previo=guardado.leer('ajustes',{})||{};
 const ajustes=Object.assign({},BASE,previo);
 ajustes.fondo=Object.assign({},BASE.fondo,previo.fondo);
@@ -576,7 +592,8 @@ ajustes.paneles=Object.assign({},BASE.paneles,previo.paneles);
 ajustes.texto=Object.assign({},BASE.texto,previo.texto);
 ajustes.moods=Object.assign({},previo.moods);
 ajustes.salida=Object.assign({},BASE.salida,previo.salida);
-ajustes.frases=Object.assign({},BASE.frases,previo.frases);   // lo que cada mood recuerda: paleta y paneles
+ajustes.frases=Object.assign({},BASE.frases,previo.frases);
+ajustes.tipos=Object.assign({},BASE.tipos,previo.tipos);   // lo que cada mood recuerda: paleta y paneles
 if(!previo.mood&&previo.paleta&&previo.paleta!=='arena')ajustes.mood='lineas';   // quien venía del primer motor arranca en Líneas
 if(!MOODS[ajustes.mood])ajustes.mood='escenario';
 {const p=PALETAS[ajustes.paleta]||PALETAS.arena;
@@ -1441,11 +1458,37 @@ function lanzarFrase(desde){
   const palabras=texto.split(/\s+/).filter(Boolean),modo=ajustes.frases.modo;
   estado.frase={texto,palabras,inicio,modo,dur:modo==='palabras'?palabras.length+1:4};
 }
+/* tipografía propia (por ejemplo Pirulen): se carga desde el ordenador y se queda en este navegador; no viaja con el motor */
+const fuentePropia={cargada:false,nombre:''};
+const deBase64=b64=>{const bin=atob(b64),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u.buffer;};
+function aBase64(buf){const u=new Uint8Array(buf);let bin='';for(let i=0;i<u.length;i+=0x8000)bin+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(bin);}
+async function usarFuentePropia(datos,nombre,guardarla){
+  const cara=new FontFace('PR Propia',datos);
+  await cara.load();
+  for(const f of[...document.fonts])if(f.family.replace(/["']/g,'')==='PR Propia')document.fonts.delete(f);
+  document.fonts.add(cara);
+  fuentePropia.cargada=true;fuentePropia.nombre=nombre;
+  $('#txtFuente').textContent=nombre;
+  if(guardarla){const b64=aBase64(datos);if(b64.length<3000000)guardado.escribir('fuentePropia',{nombre,datos:b64});else aviso('Esa tipografía es muy grande para recordarla: habrá que cargarla cada vez.');}
+}
+async function cargarFuenteArchivo(f){
+  try{
+    await usarFuentePropia(await f.arrayBuffer(),f.name.replace(/\.[^.]+$/,''),true);
+    ajustes.tipos.frases='propia';ajustes.tipos.texto='propia';guardar();sincronizarControles();
+    aviso('Tipografía cargada: '+f.name+'. Ya se usa en las frases y en el texto.');
+  }catch(err){aviso('No pude leer esa tipografía. Usa un archivo TTF, OTF, WOFF o WOFF2.');}
+}
 function fuenteFrase(){
-  return(MOODS[ajustes.mood]||{}).tipografia==='brocha'
+  const t=ajustes.tipos.frases;
+  if(t==='propia'&&fuentePropia.cargada)return{peso:'400',familia:'"PR Propia", "PR Monumental", Impact, sans-serif'};
+  const cual=t==='monumental'||t==='brocha'?t:(MOODS[ajustes.mood]||{}).tipografia;
+  return cual==='brocha'
     ?{peso:'400',familia:'"PR Brocha", "Permanent Marker", "Marker Felt", cursive'}
     :{peso:'900',familia:'"PR Monumental", "Big Shoulders Display", Impact, "Arial Narrow", sans-serif'};
 }
+const fuenteTexto=(peso,tam)=>ajustes.tipos.texto==='propia'&&fuentePropia.cargada
+  ?'400 '+tam+'px "PR Propia", Barlow, system-ui, sans-serif'
+  :peso+' '+tam+'px Barlow, system-ui, -apple-system, "Segoe UI", sans-serif';
 function textoFrase(ctx,W,H,beat,color){   // dibuja la palabra o frase activa; false si no hay ninguna
   const f=estado.frase;if(!f)return false;
   const t=beat-f.inicio;if(t<0||t>=f.dur)return false;
@@ -1482,14 +1525,14 @@ function componerPaneles(ctx,src,W,H,pn){
   }
 }
 function textoEspaciado(ctx,txt,tam,peso,aire,cx,cy){   // letras con mucho aire, como un cartel de escenario
-  ctx.font=peso+' '+tam+'px Barlow, system-ui, -apple-system, "Segoe UI", sans-serif';
+  ctx.font=fuenteTexto(peso,tam);
   const letras=[...txt],anchos=letras.map(ch=>ctx.measureText(ch).width);
   const total=anchos.reduce((a,b)=>a+b,0)+aire*Math.max(0,letras.length-1);
   let x=cx-total/2;
   letras.forEach((ch,i)=>{ctx.fillText(ch,x,cy);x+=anchos[i]+aire;});
 }
 function anchoEspaciado(ctx,txt,tam,peso,aire){
-  ctx.font=peso+' '+tam+'px Barlow, system-ui, -apple-system, "Segoe UI", sans-serif';
+  ctx.font=fuenteTexto(peso,tam);
   const letras=[...txt];return letras.reduce((a,ch)=>a+ctx.measureText(ch).width,0)+aire*Math.max(0,letras.length-1);
 }
 function dibujarTexto(ctx,W,H,o){
@@ -1525,6 +1568,7 @@ function capasFinales(ctx,W,H,beat){   // invert, flash, strobe y blackout van e
 
 /* ───────── salida: esta ventana o una ventana aparte para el proyector ───────── */
 const lienzo=$('#lienzo'),buffer=document.createElement('canvas'),bctx=buffer.getContext('2d');
+const final=document.createElement('canvas'),fctx=final.getContext('2d');   // escena + capas finales, en esta ventana para que usen sus tipografías
 let salida=null;
 const salidaAbierta=()=>!!(salida&&salida.win&&!salida.win.closed);
 function ajustarTam(c,win){
@@ -1551,8 +1595,10 @@ function dibujarSalida(beat){
   const ctx=dest.getContext('2d');
   ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;
   if(z.w!==W||z.h!==H){ctx.fillStyle=rgba([0,0,0],1);ctx.fillRect(0,0,W,H);}
-  ctx.drawImage(buffer,z.x,z.y);
-  ctx.save();ctx.translate(z.x,z.y);ctx.beginPath();ctx.rect(0,0,z.w,z.h);ctx.clip();capasFinales(ctx,z.w,z.h,beat);ctx.restore();
+  if(final.width!==z.w||final.height!==z.h){final.width=z.w;final.height=z.h;}
+  fctx.globalCompositeOperation='source-over';fctx.globalAlpha=1;fctx.drawImage(buffer,0,0);
+  capasFinales(fctx,z.w,z.h,beat);
+  ctx.drawImage(final,z.x,z.y);
   if(fuera&&ajustarTam(lienzo,window)){   // monitor: copia escalada de la pantalla
     const p=lienzo.getContext('2d'),pw=lienzo.width,ph=lienzo.height,e=Math.min(pw/z.w,ph/z.h),dw=z.w*e,dh=z.h*e;
     p.fillStyle=rgba([0,0,0],1);p.fillRect(0,0,pw,ph);p.drawImage(dest,z.x,z.y,z.w,z.h,(pw-dw)/2,(ph-dh)/2,dw,dh);
@@ -1803,6 +1849,8 @@ function sincronizarControles(){
   $('#selWhiteout').value=String(ajustes.whiteoutDrop);$('#chkSilueta').checked=ajustes.siluetaBlanco;
   if(document.activeElement!==$('#txtFrases'))$('#txtFrases').value=(ajustes.frases.lista||[]).join('\n');
   $('#selModoFrase').value=ajustes.frases.modo;$('#chkFraseDrop').checked=ajustes.frases.enDrop;
+  $('#selTipoFrase').value=ajustes.tipos.frases==='propia'&&!fuentePropia.cargada?'mood':ajustes.tipos.frases;
+  $('#selTipoTexto').value=ajustes.tipos.texto==='propia'&&fuentePropia.cargada?'propia':'barlow';
   $('#selFuenteLogo').value=ajustes.logo.fuente==='svg'&&logoSvg.formas?'svg':'trazado';$('#rngGrosor').value=ajustes.logo.grosor;$('#selAcabado').value=ajustes.logo.acabado;
   $('#selFormato').value=ajustes.salida.formato;$('#selAncla').value=ajustes.salida.ancla;$('#chkZona').checked=ajustes.salida.zonaSegura;
   aplicarFormato();
@@ -1849,6 +1897,14 @@ function enlazar(){
   cambio('#txtFrases',e=>{ajustes.frases.lista=e.target.value.split('\n');guardar();},'input');
   cambio('#selModoFrase',e=>{ajustes.frases.modo=e.target.value;guardar();});
   cambio('#chkFraseDrop',e=>{ajustes.frases.enDrop=e.target.checked;guardar();});
+  const elegirTipo=(campo,el)=>{   // elegir «propia» sin tenerla cargada abre el selector de archivo
+    if(el.value==='propia'&&!fuentePropia.cargada){el.value=campo==='frases'?'mood':'barlow';$('#fileFuente').click();return;}
+    ajustes.tipos[campo]=el.value;guardar();
+  };
+  cambio('#selTipoFrase',e=>elegirTipo('frases',e.target));
+  cambio('#selTipoTexto',e=>elegirTipo('texto',e.target));
+  cambio('#btnFuente',()=>$('#fileFuente').click(),'click');
+  cambio('#fileFuente',async e=>{const f=e.target.files&&e.target.files[0];e.target.value='';if(f)await cargarFuenteArchivo(f);});
   cambio('#btnFrase',()=>lanzarFrase(),'click');
   cambio('#btnFrase2',()=>lanzarFrase(),'click');
   cambio('#selFuenteLogo',e=>{
@@ -1885,8 +1941,10 @@ function enlazar(){
   document.addEventListener('drop',e=>{
     if(!conArchivos(e))return;e.preventDefault();arrastres=0;document.body.classList.remove('soltando');
     const todos=[...e.dataTransfer.files],svg=todos.find(f=>/\.svg$/i.test(f.name)||f.type==='image/svg+xml');
+    const tipo=todos.find(f=>/\.(ttf|otf|woff2?)$/i.test(f.name));
     if(svg)cargarSvgArchivo(svg);   // un SVG soltado es el logo
-    const videos=todos.filter(f=>f!==svg);if(videos.length)agregarClips(videos);
+    if(tipo)cargarFuenteArchivo(tipo);   // una tipografía soltada se usa en frases y texto
+    const videos=todos.filter(f=>f!==svg&&f!==tipo);if(videos.length)agregarClips(videos);
   });
   cambio('#chkLogo',e=>{ajustes.logo.on=e.target.checked;guardar();});
   cambio('#rngLogo',e=>{ajustes.logo.op=e.target.value/100;guardar();},'input');
@@ -2046,13 +2104,14 @@ setInterval(()=>{if(performance.now()-ultimoCuadro>1200)programar();},1000);
 
 construirUI();enlazar();
 {const g=guardado.leer('logoSvg',null);if(g&&g.texto){try{usarLogoSvg(g.texto,g.nombre);}catch(e){}}}   // el logo SVG de la última vez
+{const g=guardado.leer('fuentePropia',null);if(g&&g.datos)usarFuentePropia(deBase64(g.datos),g.nombre,false).then(sincronizarControles).catch(()=>{});}   // y la tipografía propia
 sincronizarControles();dibujarMarca();
 if(document.fonts)Promise.all([document.fonts.load('900 100px "PR Monumental"'),document.fonts.load('400 100px "PR Brocha"')]).catch(()=>{});
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(dibujarMarca);
 if(reloj.fuente==='midi')activarMidi();
 programar();
 
-window.__motorPR={estado,reloj,audio,ajustes,vis,det,clips,LOGO,dibujarLogo,pedirSeccion,aplicarSeccion,fijarTension,agregarClips,lanzarTema,pararTema,moverTema,pedirMood,aplicarMood,lanzarFrase,usarLogoSvg};
+window.__motorPR={estado,reloj,audio,ajustes,vis,det,clips,LOGO,dibujarLogo,pedirSeccion,aplicarSeccion,fijarTension,agregarClips,lanzarTema,pararTema,moverTema,pedirMood,aplicarMood,lanzarFrase,usarLogoSvg,fuentePropia};
 })();
 </script>
 </body>

@@ -65,6 +65,7 @@ Sacro, Bio-Hazard y Perreo son los bloques del show de Halloween y mantienen el 
 - **Whiteout en el drop**: golpe corto, 1 tiempo o 1 compás de blanco total (para el CO2).
 - **Silueta**: sobre el blanco (whiteout, flash o strobe), el logo o la frase quedan en negro.
 - **Zona segura**: las frases no se salen de la franja central del 50 % de alto; en el monitor se marca con dos líneas.
+- **Tipografía propia** (por ejemplo Pirulen): *Frases de impacto → Cargar tipografía* (o arrastrar el archivo TTF, OTF, WOFF o WOFF2 a la página). Se usa en las frases y en el texto de la capa 2, y se recuerda en ese navegador. El archivo no se sube al repositorio: revisa que tu licencia cubra su uso en el show.
 
 ## Logo
 
