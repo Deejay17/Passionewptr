@@ -47,7 +47,7 @@ Sacro, Bio-Hazard y Perreo son los bloques del show de Halloween y mantienen el 
 | `1` – `5` | Intro, Groove, Break, Subida, Drop (entran en el siguiente tiempo) |
 | `Espacio` | Marcar el 1 del compás (alinea las frases) |
 | `T` | Tap tempo (empieza a tocar en el 1) |
-| `F` / `B` / `S` / `I` | Flash / Blackout / Strobe / Invert mientras mantienes la tecla |
+| `F` / `B` / `S` / `I` / `G` | Flash / Blackout / Strobe / Invert / Glitch mientras mantienes la tecla |
 | `↑` `↓` | Tensión manual |
 | `C` | Siguiente loop |
 | `L` | Lanzar el siguiente tema en el 1 |
@@ -66,6 +66,13 @@ Sacro, Bio-Hazard y Perreo son los bloques del show de Halloween y mantienen el 
 - **Silueta**: sobre el blanco (whiteout, flash o strobe), el logo o la frase quedan en negro.
 - **Zona segura**: las frases no se salen de la franja central del 50 % de alto; en el monitor se marca con dos líneas.
 - **Tipografía propia** (por ejemplo Pirulen): *Frases de impacto → Cargar tipografía* (o arrastrar el archivo TTF, OTF, WOFF o WOFF2 a la página). Se usa en las frases y en el texto de la capa 2, y se recuerda en ese navegador. El archivo no se sube al repositorio: revisa que tu licencia cubra su uso en el show.
+
+## Efectos de tensión
+
+- **Blur**: crece con la tensión (la subida o la perilla manual), respira con cada tiempo y se limpia de golpe en el drop.
+- **Glitch**: con el redoble de la subida salen golpes cortos de aberración de color y franjas corridas, cada vez más seguidos. También a mano, manteniendo `G`.
+- Si mapeas la perilla del filtro de Traktor a **Tensión**, el filtro mueve también el blur y el glitch.
+- Se activan o quitan en *Narrativa*. La cabecera muestra los **cuadros por segundo** de la salida: en verde a 55 o más. Si en tu ordenador bajan con el blur, desactívalo ahí.
 
 ## Logo
 

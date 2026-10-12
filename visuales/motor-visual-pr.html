@@ -88,7 +88,7 @@ kbd{font:500 11px/1 var(--f-mono);color:var(--muted);border:1px solid var(--line
 
 /* controles en vivo */
 .vivo{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:12px;align-items:stretch}
-.momentos{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.momentos{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px}
 .mom{display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:6px;padding:8px 9px;background:var(--panel);border:1px solid var(--line);border-radius:4px;cursor:pointer;font:700 14px/1 var(--f-display);letter-spacing:.08em;text-transform:uppercase;user-select:none;-webkit-user-select:none;touch-action:none;min-width:0;text-align:left}
 .mom:hover{border-color:var(--muted)}
 .mom.activo{background:var(--fg);color:var(--bg);border-color:var(--fg)}
@@ -206,6 +206,7 @@ body.soltando .escena{outline:2px dashed var(--live);outline-offset:4px}
     <div class="tiempos" id="tiempos" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
     <div class="lectura"><span id="txtCompas">1</span><small>/ 16</small></div>
     <button class="chip" id="chipAuto" type="button" aria-pressed="false" title="Modo auto: cambia de sección leyendo el audio"><i class="led"></i>Auto</button>
+    <span class="chip" id="chipFps" title="Cuadros por segundo de la salida" data-estado="ok"><i class="led"></i><span id="txtFps">60 fps</span></span>
   </div>
 </header>
 
@@ -238,6 +239,7 @@ body.soltando .escena{outline:2px dashed var(--live);outline-offset:4px}
         <button class="mom" type="button" data-mantener="blackout"><kbd>B</kbd>Blackout</button>
         <button class="mom" type="button" data-mantener="strobe"><kbd>S</kbd>Strobe</button>
         <button class="mom" type="button" data-mantener="invert"><kbd>I</kbd>Invert</button>
+        <button class="mom" type="button" data-mantener="glitch"><kbd>G</kbd>Glitch</button>
         <button class="mom" type="button" id="btnFrase"><kbd>P</kbd>Frase</button>
         <button class="mom" type="button" id="btnTap"><kbd>T</kbd>Tap</button>
         <button class="mom" type="button" id="btnUno"><kbd>Espacio</kbd>Marcar el 1</button>
@@ -289,6 +291,8 @@ body.soltando .escena{outline:2px dashed var(--live);outline-offset:4px}
           </select>
         </label>
         <label class="check"><input type="checkbox" id="chkSilueta"> Logo y frases en silueta negra sobre el blanco</label>
+        <label class="check"><input type="checkbox" id="chkBlur"> Blur que crece con la tensión y se limpia de golpe en el drop</label>
+        <label class="check"><input type="checkbox" id="chkGlitch"> Glitch con el redoble de la subida (aberración de color y franjas)</label>
         <label class="check"><input type="checkbox" id="chkAuto"> Modo auto: detecta break, subida y drop leyendo el audio (experimental)</label>
         <p class="ayuda">El drop dura 16 compases y luego vuelve solo al groove. Los cambios de sección entran en el siguiente tiempo.</p>
       </div>
@@ -582,7 +586,7 @@ const BASE={bpm:126,fuente:'interno',compasesSubida:8,autoDrop:true,blackoutAnte
   mood:'escenario',moodEnDrop:false,whiteoutDrop:0,siluetaBlanco:true,
   salida:{formato:'libre',ancla:'centro',zonaSegura:true},
   frases:{lista:['HOW DO YOU FEEL RIGHT NOW','LA MÁQUINA','PETER ROMO'],modo:'palabras',enDrop:false,idx:0},
-  tipos:{frases:'mood',texto:'barlow'}};
+  tipos:{frases:'mood',texto:'barlow'},efectos:{blur:true,glitch:true}};
 const previo=guardado.leer('ajustes',{})||{};
 const ajustes=Object.assign({},BASE,previo);
 ajustes.fondo=Object.assign({},BASE.fondo,previo.fondo);
@@ -590,10 +594,11 @@ ajustes.logo=Object.assign({},BASE.logo,previo.logo);
 ajustes.clips=Object.assign({},BASE.clips,previo.clips);
 ajustes.paneles=Object.assign({},BASE.paneles,previo.paneles);
 ajustes.texto=Object.assign({},BASE.texto,previo.texto);
-ajustes.moods=Object.assign({},previo.moods);
+ajustes.moods=Object.assign({},previo.moods);   // lo que cada mood recuerda: paleta, paneles y acabado
 ajustes.salida=Object.assign({},BASE.salida,previo.salida);
 ajustes.frases=Object.assign({},BASE.frases,previo.frases);
-ajustes.tipos=Object.assign({},BASE.tipos,previo.tipos);   // lo que cada mood recuerda: paleta y paneles
+ajustes.tipos=Object.assign({},BASE.tipos,previo.tipos);
+ajustes.efectos=Object.assign({},BASE.efectos,previo.efectos);
 if(!previo.mood&&previo.paleta&&previo.paleta!=='arena')ajustes.mood='lineas';   // quien venía del primer motor arranca en Líneas
 if(!MOODS[ajustes.mood])ajustes.mood='escenario';
 {const p=PALETAS[ajustes.paleta]||PALETAS.arena;
@@ -615,8 +620,8 @@ const NOMBRE={};SECCIONES.forEach(s=>{NOMBRE[s[0]]=s[1];});
 const DROP_COMPASES=16;
 const PULSO={intro:0.5,groove:1,break:0,subida:0,drop:1.4};
 const estado={seccion:'groove',inicio:0,pendiente:null,auto:false,tensionManual:0,
-  mantener:{flash:false,blackout:false,strobe:false,invert:false},
-  kick:0,ondaProg:1,flash:0,strobe:0,blackout:0,corte:false,semilla:1,fase:0,moodPend:null,blancoHasta:0,frase:null,logoAlfa:1,logoEsquina:0};
+  mantener:{flash:false,blackout:false,strobe:false,invert:false,glitch:false},
+  kick:0,ondaProg:1,flash:0,strobe:0,blackout:0,corte:false,semilla:1,fase:0,moodPend:null,blancoHasta:0,frase:null,logoAlfa:1,logoEsquina:0,glitch:0,semillaGlitch:1};
 
 /* ───────── reloj: posición en tiempos (negras) ───────── */
 const reloj={
@@ -813,6 +818,8 @@ function alSub(div,idx){
   if(t>0.3){kick(0.25+0.6*t);if(t>0.5)nuevasBarras(0.4);}
   if(estado.mantener.strobe)golpeStrobe(div,idx,1);
   else if(ajustes.strobeAuto&&t>0.5)golpeStrobe(div,idx,0.3+1.2*(t-0.5));
+  // glitch: cada vez más frecuente y fuerte según sube la tensión
+  if(ajustes.efectos.glitch&&t>0.4&&Math.random()<0.25+(t-0.4)*1.1){estado.glitch=Math.max(estado.glitch,0.4+0.6*t);estado.semillaGlitch++;}
 }
 function golpeStrobe(div,idx,intensidad){
   if(ajustes.strobeSeguro&&reloj.bpm/60*div>3){
@@ -853,6 +860,7 @@ function decaer(dt,segBeat,beat){
   fondo.ondaProg=Math.min(1,fondo.ondaProg+dt/0.2);
   estado.flash=(estado.mantener.flash||beat<estado.blancoHasta)?1:estado.flash*Math.exp(-dt/(0.22*segBeat));
   estado.strobe*=Math.exp(-dt/0.03);
+  if(estado.mantener.glitch){estado.glitch=1;estado.semillaGlitch++;}else estado.glitch*=Math.exp(-dt/0.03);   // un golpe de glitch dura 4 o 5 cuadros
   const obj=(estado.mantener.blackout||blackoutAutomatico(beat))?1:0;
   estado.blackout=lerp(estado.blackout,obj,1-Math.exp(-dt/(obj>estado.blackout?0.015:0.08)));
 }
@@ -1579,6 +1587,37 @@ function ajustarTam(c,win){
   if(c.width!==w||c.height!==h){c.width=w;c.height=h;}
   return true;
 }
+/* efectos de tensión: blur que crece con la subida (y se limpia de golpe en el drop) y glitch con el redoble */
+const tenido=document.createElement('canvas'),tctx=tenido.getContext('2d');
+const chico=document.createElement('canvas'),cctx=chico.getContext('2d');
+function efectosTension(ctx,src,W,H,beat){
+  const b=ajustes.efectos.blur?clamp((vis.tension-0.3)/0.7):0;
+  if(b<0.34)ctx.drawImage(src,0,0);   // con el blur a tope la imagen nítida no se llega a ver
+  if(b>0.01){
+    // blur barato: se encoge a un cuarto, se difumina ahí y se vuelve a agrandar encima; respira con cada tiempo
+    const r=H*0.014*Math.pow(b,1.5)*(0.75+0.25*Math.cos(mod(beat,1)*Math.PI*2)),w=Math.max(1,Math.round(W/4)),h=Math.max(1,Math.round(H/4));
+    if(chico.width!==w||chico.height!==h){chico.width=w;chico.height=h;}
+    cctx.clearRect(0,0,w,h);cctx.filter='blur('+(r/4).toFixed(2)+'px)';cctx.drawImage(src,0,0,w,h);cctx.filter='none';
+    ctx.save();ctx.globalAlpha=clamp(b*3);ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='low';ctx.drawImage(chico,0,0,W,H);ctx.restore();
+  }
+  if(estado.glitch>0.08)glitch(ctx,src,W,H,clamp(estado.glitch));
+}
+function glitch(ctx,src,W,H,g){
+  const r=azar(estado.semillaGlitch),d=Math.max(2,W*0.006*g),w=Math.max(1,Math.round(W/2)),h=Math.max(1,Math.round(H/2));
+  if(tenido.width!==w||tenido.height!==h){tenido.width=w;tenido.height=h;}
+  // aberración cromática (a media resolución): una copia roja corrida a la derecha y una cian a la izquierda
+  for(const[col,dx]of[[[255,0,0],d],[[0,255,255],-d]]){
+    tctx.globalCompositeOperation='source-over';tctx.drawImage(src,0,0,w,h);
+    tctx.globalCompositeOperation='multiply';tctx.fillStyle=rgba(col,1);tctx.fillRect(0,0,w,h);
+    ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=0.55*g;ctx.drawImage(tenido,dx,0,W,H);ctx.restore();
+  }
+  // franjas horizontales desplazadas
+  const n=2+Math.round(5*g);
+  for(let i=0;i<n;i++){
+    const y=Math.floor(r()*H),h=Math.max(2,Math.floor(H*(0.015+0.06*r()))),dx=(r()*2-1)*W*0.04*g;
+    ctx.drawImage(src,0,y,W,h,dx,y,W,h);
+  }
+}
 function zonaPantalla(W,H){   // la parte de la ventana que es la pantalla LED
   if(ajustes.salida.formato!=='2:1')return{x:0,y:0,w:W,h:H};
   let w=W,h=Math.round(W/2);
@@ -1596,7 +1635,8 @@ function dibujarSalida(beat){
   ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;
   if(z.w!==W||z.h!==H){ctx.fillStyle=rgba([0,0,0],1);ctx.fillRect(0,0,W,H);}
   if(final.width!==z.w||final.height!==z.h){final.width=z.w;final.height=z.h;}
-  fctx.globalCompositeOperation='source-over';fctx.globalAlpha=1;fctx.drawImage(buffer,0,0);
+  fctx.globalCompositeOperation='source-over';fctx.globalAlpha=1;
+  efectosTension(fctx,buffer,z.w,z.h,beat);
   capasFinales(fctx,z.w,z.h,beat);
   ctx.drawImage(final,z.x,z.y);
   if(fuera&&ajustarTam(lienzo,window)){   // monitor: copia escalada de la pantalla
@@ -1659,6 +1699,7 @@ const ACCIONES=[
   {id:'blackout',nombre:'Blackout',tipo:'momento',fn:v=>mantener('blackout',v)},
   {id:'strobe',nombre:'Strobe',tipo:'momento',fn:v=>mantener('strobe',v)},
   {id:'invert',nombre:'Invert',tipo:'momento',fn:v=>mantener('invert',v)},
+  {id:'glitch',nombre:'Glitch',tipo:'momento',fn:v=>mantener('glitch',v)},
   {id:'tension',nombre:'Tensión',tipo:'continuo',fn:v=>fijarTension(v)},
   {id:'opFondo',nombre:'Opacidad del fondo',tipo:'continuo',fn:v=>{ajustes.fondo.op=v;$('#rngFondo').value=Math.round(v*100);guardar();}},
   {id:'opLogo',nombre:'Opacidad del logo',tipo:'continuo',fn:v=>{ajustes.logo.op=v;$('#rngLogo').value=Math.round(v*100);guardar();}},
@@ -1759,7 +1800,7 @@ function mantener(k,v){
   estado.mantener[k]=v;
   const b=document.querySelector('.mom[data-mantener="'+k+'"]');if(b)b.classList.toggle('activo',v);
 }
-function soltarTodo(){['flash','blackout','strobe','invert'].forEach(k=>{if(estado.mantener[k])mantener(k,false);});}
+function soltarTodo(){['flash','blackout','strobe','invert','glitch'].forEach(k=>{if(estado.mantener[k])mantener(k,false);});}
 function fijarTension(v){estado.tensionManual=clamp(Math.round(v*100)/100);const p=Math.round(estado.tensionManual*100);$('#rngTension').value=p;$('#outTension').textContent=p;}
 function fijarAuto(v){
   estado.auto=v;$('#chipAuto').setAttribute('aria-pressed',String(v));$('#chkAuto').checked=v;
@@ -1787,6 +1828,7 @@ function teclaAbajo(e){
     case 'b':mantener('blackout',true);break;
     case 's':mantener('strobe',true);break;
     case 'i':mantener('invert',true);break;
+    case 'g':mantener('glitch',true);break;
     case 'a':fijarAuto(!estado.auto);break;
     case 'c':siguienteClip();break;
     case 'l':lanzarTema();break;
@@ -1803,7 +1845,7 @@ function teclaAbajo(e){
 }
 function teclaArriba(e){
   const k=e.key.length===1?e.key.toLowerCase():e.key;
-  if(k==='f')mantener('flash',false);else if(k==='b')mantener('blackout',false);else if(k==='s')mantener('strobe',false);else if(k==='i')mantener('invert',false);
+  if(k==='f')mantener('flash',false);else if(k==='b')mantener('blackout',false);else if(k==='s')mantener('strobe',false);else if(k==='i')mantener('invert',false);else if(k==='g')mantener('glitch',false);
 }
 
 function construirUI(){
@@ -1824,7 +1866,7 @@ function construirUI(){
     l.querySelector('input').addEventListener('input',e=>{ajustes.colores[k]=e.target.value;ajustes.paleta='personal';selP.value='personal';leerPaleta();dibujarMarca();pintarMoods();guardar();});
   }
   const atajos=[['1 – 5','Intro, Groove, Break, Subida, Drop'],['Espacio','Marcar el 1 del compás'],['T','Tap tempo (empieza en el 1)'],
-    ['F','Flash (mantener)'],['B','Blackout (mantener)'],['S','Strobe (mantener)'],['I','Invert (mantener)'],['↑ ↓','Tensión manual'],['C','Siguiente loop'],['L','Lanzar el siguiente tema (en el 1)'],['K','Parar el tema'],['M','Siguiente mood'],['P','Frase de impacto'],['O','Logo visible o apagado'],['X','Capa 2: logo, texto o ambos'],['A','Modo auto'],['Enter','Pantalla completa']];
+    ['F','Flash (mantener)'],['B','Blackout (mantener)'],['S','Strobe (mantener)'],['I','Invert (mantener)'],['G','Glitch (mantener)'],['↑ ↓','Tensión manual'],['C','Siguiente loop'],['L','Lanzar el siguiente tema (en el 1)'],['K','Parar el tema'],['M','Siguiente mood'],['P','Frase de impacto'],['O','Logo visible o apagado'],['X','Capa 2: logo, texto o ambos'],['A','Modo auto'],['Enter','Pantalla completa']];
   const dl=$('#atajos');
   for(const[t,d]of atajos){const dt=document.createElement('dt'),kb=document.createElement('kbd'),dd=document.createElement('dd');kb.textContent=t;dt.appendChild(kb);dd.textContent=d;dl.append(dt,dd);}
   const dm=$('#descMoods');
@@ -1847,6 +1889,7 @@ function sincronizarControles(){
   $('#chkPulsoAudio').checked=ajustes.pulsoAudio;$('#rngSens').value=ajustes.umbralKick;$('#outSens').textContent=ajustes.umbralKick+' dB';
   $('#chkSeguro').checked=ajustes.strobeSeguro;$('#chkMoodDrop').checked=ajustes.moodEnDrop;
   $('#selWhiteout').value=String(ajustes.whiteoutDrop);$('#chkSilueta').checked=ajustes.siluetaBlanco;
+  $('#chkBlur').checked=ajustes.efectos.blur;$('#chkGlitch').checked=ajustes.efectos.glitch;
   if(document.activeElement!==$('#txtFrases'))$('#txtFrases').value=(ajustes.frases.lista||[]).join('\n');
   $('#selModoFrase').value=ajustes.frases.modo;$('#chkFraseDrop').checked=ajustes.frases.enDrop;
   $('#selTipoFrase').value=ajustes.tipos.frases==='propia'&&!fuentePropia.cargada?'mood':ajustes.tipos.frases;
@@ -1894,6 +1937,8 @@ function enlazar(){
   cambio('#chkMoodDrop',e=>{ajustes.moodEnDrop=e.target.checked;guardar();});
   cambio('#selWhiteout',e=>{ajustes.whiteoutDrop=+e.target.value;guardar();});
   cambio('#chkSilueta',e=>{ajustes.siluetaBlanco=e.target.checked;guardar();});
+  cambio('#chkBlur',e=>{ajustes.efectos.blur=e.target.checked;guardar();});
+  cambio('#chkGlitch',e=>{ajustes.efectos.glitch=e.target.checked;guardar();});
   cambio('#txtFrases',e=>{ajustes.frases.lista=e.target.value.split('\n');guardar();},'input');
   cambio('#selModoFrase',e=>{ajustes.frases.modo=e.target.value;guardar();});
   cambio('#chkFraseDrop',e=>{ajustes.frases.enDrop=e.target.checked;guardar();});
@@ -2005,7 +2050,7 @@ function enlazar(){
 }
 
 /* ───────── interfaz por cuadro ───────── */
-const ui={bpm:'',tiempo:-1,compas:-1,reloj:'',sec:'',pend:'',info:'',prog:-1};
+const ui={bpm:'',tiempo:-1,compas:-1,reloj:'',sec:'',pend:'',info:'',prog:-1,cuadros:0,desde:performance.now()};
 const puntos=[...document.querySelectorAll('#tiempos i')];
 const med={graves:$('#medGraves'),medios:$('#medMedios'),agudos:$('#medAgudos'),kick:$('#medKick')};
 const normDb=db=>clamp((db+85)/60);
@@ -2038,6 +2083,12 @@ function actualizarUI(beat,a){
   med.agudos.style.transform='scaleX('+(a?normDb(a.agudos):0).toFixed(3)+')';
   med.kick.style.transform='scaleX('+clamp(estado.kick).toFixed(3)+')';
   actualizarTema(beat);
+  ui.cuadros++;
+  const ahora=performance.now();
+  if(ahora-ui.desde>=500){   // cuadros por segundo de la salida: verde a 55 o más, ámbar por debajo
+    const fps=Math.round(ui.cuadros*1000/(ahora-ui.desde));ui.cuadros=0;ui.desde=ahora;
+    $('#txtFps').textContent=fps+' fps';$('#chipFps').dataset.estado=fps>=55?'ok':'espera';
+  }
 }
 const temaUI={txt:'',prog:-1};
 function actualizarTema(beat){
