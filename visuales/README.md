@@ -16,7 +16,20 @@ Son dos capas, como pediste:
 - **1 · Fondo**: tus clips de video o el fondo generativo (barras, diagonales con los ángulos del logo, onda de kick, partículas, haces de luz, lavado de color). Se puede partir en **paneles LED** verticales: una imagen que cruza todos, la misma repetida o en espejo.
 - **2 · Logo y texto**: el logo PR, un texto con letras muy espaciadas (nombre del evento, fecha) o los dos. El aire entre letras se abre con la tensión, igual que los trazos del logo.
 
-La paleta por defecto, **Arena**, sale de las referencias: azul para el groove y los breaks, blanco frío para la tensión y rojo para el drop.
+## Moods
+
+Un **mood** es el look completo: paleta, qué fondo sale en cada sección y paneles. Las secciones cuentan la historia dentro de cada tema; el mood cambia entre temas o entre partes de la noche (warm-up, peak time, cierre).
+
+| Mood | Look |
+|---|---|
+| **Líneas** | El primer motor: trazos, barras y diagonales con los ángulos del logo, en ultravioleta |
+| **Escenario** | Partículas, haces de luz y la pantalla roja con el logo en silueta en el drop. Paleta **Arena**, sacada de las referencias: azul en el groove y los breaks, blanco frío en la tensión, rojo en el drop |
+| **Pared LED** | El escenario partido en 12 columnas, como una pared de pantallas |
+
+- Se cambia con `M` (o con los botones bajo las secciones) y entra en el siguiente tiempo.
+- Cada mood recuerda tus cambios de paleta y paneles. **Restablecer el mood actual** vuelve al original.
+- Opción **Pasar al siguiente mood en cada drop**, para que cada drop estrene look.
+- Para crear un mood nuevo se añade una entrada en `MOODS` dentro del HTML.
 
 ## Uso rápido
 
@@ -29,11 +42,12 @@ La paleta por defecto, **Arena**, sale de las referencias: azul para el groove y
 | `1` – `5` | Intro, Groove, Break, Subida, Drop (entran en el siguiente tiempo) |
 | `Espacio` | Marcar el 1 del compás (alinea las frases) |
 | `T` | Tap tempo (empieza a tocar en el 1) |
-| `F` / `B` / `S` | Flash / Blackout / Strobe mientras mantienes la tecla |
+| `F` / `B` / `S` / `I` | Flash / Blackout / Strobe / Invert mientras mantienes la tecla |
 | `↑` `↓` | Tensión manual |
 | `C` | Siguiente loop |
 | `L` | Lanzar el siguiente tema en el 1 |
 | `K` | Parar el tema |
+| `M` | Siguiente mood |
 | `X` | Capa 2: logo, texto o ambos |
 | `A` | Modo auto |
 | `Enter` | Pantalla completa |
@@ -121,10 +135,11 @@ Todo está en `motor-visual-pr.html`, en bloques comentados:
 
 | Quieres cambiar… | Busca |
 |---|---|
+| Los moods (looks completos) | `MOODS` |
 | Colores y paletas | `PALETAS` |
 | Cómo se ve cada sección (color, estela, apertura de trazos, velocidad) | `function objetivos` |
 | Cuánto dura el drop | `DROP_COMPASES` |
-| Qué patrón de fondo usa cada sección | `function patrones` |
+| Qué fondo usa cada sección | `fondos` de cada mood en `MOODS` |
 | La forma del logo | `LOGO` (coordenadas sobre la imagen original; se cambiará por el vector) |
 | Cuándo cortan los clips | `function tocaCorte` |
 | El tinte de los clips | `function dibujarClip` |

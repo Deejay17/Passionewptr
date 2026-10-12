@@ -81,7 +81,7 @@ kbd{font:500 11px/1 var(--f-mono);color:var(--muted);border:1px solid var(--line
 
 /* controles en vivo */
 .vivo{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:12px;align-items:stretch}
-.momentos{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.momentos{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
 .mom{display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:6px;padding:8px 9px;background:var(--panel);border:1px solid var(--line);border-radius:4px;cursor:pointer;font:700 14px/1 var(--f-display);letter-spacing:.08em;text-transform:uppercase;user-select:none;-webkit-user-select:none;touch-action:none;min-width:0;text-align:left}
 .mom:hover{border-color:var(--muted)}
 .mom.activo{background:var(--fg);color:var(--bg);border-color:var(--fg)}
@@ -142,6 +142,20 @@ audio{width:100%}
 .clip-bpm input[type=number]{width:8ch;padding:3px 5px;font:500 12px/1.2 var(--f-mono)}
 .clip-quitar{margin-left:auto;padding:2px 8px;border:1px solid var(--line);border-radius:3px;background:transparent;color:var(--muted);cursor:pointer;font-size:13px}
 .clip-quitar:hover{color:var(--fg);border-color:var(--muted)}
+.fila-moods{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.etq{display:inline-flex;align-items:center;gap:6px;font:700 11px/1 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.moods{display:flex;flex-wrap:wrap;gap:8px;flex:1;min-width:0}
+.mood{display:inline-flex;align-items:center;gap:9px;padding:7px 11px;background:var(--panel);border:1px solid var(--line);border-radius:4px;cursor:pointer;color:var(--fg)}
+.mood:hover{border-color:var(--muted)}
+.mood-nombre{font:700 15px/1 var(--f-display);letter-spacing:.08em;text-transform:uppercase}
+.mood[aria-pressed="true"]{border-color:var(--live);background:var(--raise)}
+.mood[aria-pressed="true"] .mood-nombre{color:var(--live)}
+.mood.pendiente{border-style:dashed;border-color:var(--live)}
+.muestras{display:inline-flex;gap:2px}
+.muestras i{width:9px;height:9px;border-radius:2px}
+.lista-moods{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 12px;margin:0;font-size:14px}
+.lista-moods dt{font-weight:600}
+.lista-moods dd{margin:0;color:var(--muted)}
 .tema{display:grid;gap:8px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:4px}
 .tema.sonando{border-color:var(--live)}
 .tema-cab{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;min-width:0}
@@ -194,6 +208,10 @@ body.soltando .escena{outline:2px dashed var(--live);outline-offset:4px}
       <div class="hud hud-der" id="hudSalida" hidden>Salida en otra ventana</div>
     </div>
     <div class="secciones" id="secciones" role="group" aria-label="Sección del track"></div>
+    <div class="fila-moods">
+      <span class="etq">Mood <kbd>M</kbd></span>
+      <div class="moods" id="moods" role="group" aria-label="Mood"></div>
+    </div>
     <div class="tema" id="temaBarra" hidden>
       <div class="tema-cab"><span class="tema-etq">Tema</span><b id="temaNombre"></b><span id="temaEstado"></span></div>
       <div class="tema-prog" aria-hidden="true"><i id="temaProg"></i></div>
@@ -209,6 +227,7 @@ body.soltando .escena{outline:2px dashed var(--live);outline-offset:4px}
         <button class="mom" type="button" data-mantener="flash"><kbd>F</kbd>Flash</button>
         <button class="mom" type="button" data-mantener="blackout"><kbd>B</kbd>Blackout</button>
         <button class="mom" type="button" data-mantener="strobe"><kbd>S</kbd>Strobe</button>
+        <button class="mom" type="button" data-mantener="invert"><kbd>I</kbd>Invert</button>
         <button class="mom" type="button" id="btnTap"><kbd>T</kbd>Tap</button>
         <button class="mom" type="button" id="btnUno"><kbd>Espacio</kbd>Marcar el 1</button>
       </div>
@@ -257,6 +276,16 @@ body.soltando .escena{outline:2px dashed var(--live);outline-offset:4px}
     </details>
 
     <details class="grupo" open>
+      <summary>Moods</summary>
+      <div class="cuerpo">
+        <p class="ayuda">Un mood es el look completo: paleta, qué fondo sale en cada sección y paneles. Las secciones cuentan la historia dentro de cada tema; el mood cambia entre temas o entre partes de la noche (warm-up, peak time, cierre). Cada mood recuerda tus cambios de paleta y paneles.</p>
+        <dl class="lista-moods" id="descMoods"></dl>
+        <label class="check"><input type="checkbox" id="chkMoodDrop"> Pasar al siguiente mood en cada drop</label>
+        <div class="fila"><button class="btn" type="button" id="btnResetMood">Restablecer el mood actual</button></div>
+      </div>
+    </details>
+
+    <details class="grupo" open>
       <summary>Capas</summary>
       <div class="cuerpo">
         <p class="sub">1 · Fondo</p>
@@ -271,7 +300,7 @@ body.soltando .escena{outline:2px dashed var(--live);outline-offset:4px}
         </label>
         <label class="campo">Patrón generativo
           <select id="selPatron">
-            <option value="auto">Automático según la sección</option>
+            <option value="auto">Según el mood y la sección</option>
             <option value="barras">Barras</option>
             <option value="diagonales">Diagonales</option>
             <option value="onda">Onda de kick</option>
@@ -442,9 +471,25 @@ const ROLES=[
   ['acento','Acento','Solo en el drop'],
   ['flash','Flash','Flash y strobe']
 ];
+/* Moods: el look completo (paleta, fondo de cada sección y paneles).
+   Las secciones cuentan la historia dentro de cada tema; el mood cambia entre temas o partes de la noche.
+   Cada sección lista sus fondos: la subida pasa al segundo con la tensión, el drop rota cada 4 compases y el resto cada 8. */
+const MOODS={
+  lineas:{nombre:'Líneas',desc:'El primero: trazos, barras y diagonales con los ángulos del logo, en ultravioleta.',paleta:'ultravioleta',
+    paneles:{n:0,hueco:0.18,modo:'continuo'},
+    fondos:{intro:[['onda']],groove:[['barras'],['diagonales']],break:[['diagonales']],subida:[['diagonales'],['diagonales','barras']],drop:[['onda','barras']]}},
+  escenario:{nombre:'Escenario',desc:'Partículas, haces de luz y la pantalla roja con el logo en silueta en el drop.',paleta:'arena',
+    paneles:{n:0,hueco:0.18,modo:'continuo'},
+    fondos:{intro:[['particulas']],groove:[['barras'],['haces'],['diagonales']],break:[['particulas']],subida:[['haces'],['haces','barras']],drop:[['lavado'],['onda','barras']]}},
+  pared:{nombre:'Pared LED',desc:'El escenario partido en 12 columnas, como una pared de pantallas.',paleta:'arena',
+    paneles:{n:12,hueco:0.18,modo:'continuo'},
+    fondos:{intro:[['particulas']],groove:[['particulas'],['haces'],['barras']],break:[['particulas']],subida:[['haces'],['haces','barras']],drop:[['lavado'],['particulas','barras']]}}
+};
+const ORDEN_MOODS=Object.keys(MOODS);
 const BASE={bpm:126,fuente:'interno',compasesSubida:8,autoDrop:true,blackoutAntes:true,strobeAuto:true,strobeSeguro:true,
   paleta:'arena',fondo:{on:true,op:0.8,patron:'auto',fuente:'clips'},logo:{on:true,op:1,tam:0.62},pulsoAudio:true,umbralKick:6,
-  clips:{cada:8,tinte:true,velocidad:true},paneles:{n:0,hueco:0.18,modo:'continuo'},texto:{modo:'logo',l1:'PR',l2:'DJ SET'}};
+  clips:{cada:8,tinte:true,velocidad:true},paneles:{n:0,hueco:0.18,modo:'continuo'},texto:{modo:'logo',l1:'PR',l2:'DJ SET'},
+  mood:'escenario',moodEnDrop:false};
 const previo=guardado.leer('ajustes',{})||{};
 const ajustes=Object.assign({},BASE,previo);
 ajustes.fondo=Object.assign({},BASE.fondo,previo.fondo);
@@ -452,6 +497,9 @@ ajustes.logo=Object.assign({},BASE.logo,previo.logo);
 ajustes.clips=Object.assign({},BASE.clips,previo.clips);
 ajustes.paneles=Object.assign({},BASE.paneles,previo.paneles);
 ajustes.texto=Object.assign({},BASE.texto,previo.texto);
+ajustes.moods=Object.assign({},previo.moods);   // lo que cada mood recuerda: paleta y paneles
+if(!previo.mood&&previo.paleta&&previo.paleta!=='arena')ajustes.mood='lineas';   // quien venía del primer motor arranca en Líneas
+if(!MOODS[ajustes.mood])ajustes.mood='escenario';
 {const p=PALETAS[ajustes.paleta]||PALETAS.arena;
  ajustes.colores=Object.assign({fondo:p.fondo,base:p.base,tension:p.tension,acento:p.acento,flash:p.flash},previo.colores);}
 let tGuardar;
@@ -471,8 +519,8 @@ const NOMBRE={};SECCIONES.forEach(s=>{NOMBRE[s[0]]=s[1];});
 const DROP_COMPASES=16;
 const PULSO={intro:0.5,groove:1,break:0,subida:0,drop:1.4};
 const estado={seccion:'groove',inicio:0,pendiente:null,auto:false,tensionManual:0,
-  mantener:{flash:false,blackout:false,strobe:false},
-  kick:0,ondaProg:1,flash:0,strobe:0,blackout:0,corte:false,semilla:1,fase:0};
+  mantener:{flash:false,blackout:false,strobe:false,invert:false},
+  kick:0,ondaProg:1,flash:0,strobe:0,blackout:0,corte:false,semilla:1,fase:0,moodPend:null};
 
 /* ───────── reloj: posición en tiempos (negras) ───────── */
 const reloj={
@@ -604,8 +652,32 @@ function pedirSeccion(id){
 }
 function aplicarSeccion(id,b){
   estado.seccion=id;estado.inicio=b;estado.pendiente=null;
+  if(id==='drop'&&ajustes.moodEnDrop)aplicarMood(siguienteMood());
   if(id==='drop'){estado.flash=1;estado.blackout=0;estado.corte=true;kick(1.5);fondo.angulo=(fondo.angulo+1)%ANGULOS.length;nuevasBarras(1);}
   cortarClip(id);
+}
+const coloresDe=id=>{const p=PALETAS[id];return{fondo:p.fondo,base:p.base,tension:p.tension,acento:p.acento,flash:p.flash};};
+function estadoMood(id){   // tu paleta y tus paneles para ese mood, o los de fábrica
+  const g=ajustes.moods[id],m=MOODS[id];
+  return g?{paleta:g.paleta,colores:{...g.colores},paneles:{...g.paneles}}:{paleta:m.paleta,colores:coloresDe(m.paleta),paneles:{...m.paneles}};
+}
+function aplicarMood(id){
+  if(!MOODS[id])return;
+  ajustes.moods[ajustes.mood]={paleta:ajustes.paleta,colores:{...ajustes.colores},paneles:{...ajustes.paneles}};
+  const e=estadoMood(id);
+  ajustes.mood=id;ajustes.paleta=e.paleta;ajustes.colores=e.colores;ajustes.paneles=e.paneles;estado.moodPend=null;
+  leerPaleta();sincronizarControles();dibujarMarca();guardar();
+}
+function pedirMood(id){
+  if(id===ajustes.mood){if(estado.moodPend){estado.moodPend=null;pintarMoods();}return;}
+  const b=reloj.beat,base=Math.floor(b);
+  if(b-base<0.25)aplicarMood(id);else{estado.moodPend={id,beat:base+1};pintarMoods();}
+}
+const siguienteMood=()=>ORDEN_MOODS[(ORDEN_MOODS.indexOf(estado.moodPend?estado.moodPend.id:ajustes.mood)+1)%ORDEN_MOODS.length];
+function restablecerMood(){
+  delete ajustes.moods[ajustes.mood];
+  const e=estadoMood(ajustes.mood);ajustes.paleta=e.paleta;ajustes.colores=e.colores;ajustes.paneles=e.paneles;
+  leerPaleta();sincronizarControles();dibujarMarca();guardar();aviso('Mood '+MOODS[ajustes.mood].nombre+' restablecido');
 }
 const inicioSubida=()=>Math.round(estado.inicio/4)*4;   // la subida se alinea a la rejilla de compases
 const finSubida=()=>inicioSubida()+ajustes.compasesSubida*4;
@@ -616,6 +688,7 @@ function kick(g){estado.kick=Math.max(estado.kick,g);if(g>0.3){estado.ondaProg=0
 
 function alTiempo(b){
   if(clips.temaPend&&b>=clips.temaPend.inicioBeat)iniciarTema(clips.temaPend);
+  if(estado.moodPend&&b>=estado.moodPend.beat)aplicarMood(estado.moodPend.id);
   if(estado.pendiente&&b>=estado.pendiente.beat)aplicarSeccion(estado.pendiente.id,b);
   if(estado.seccion==='subida'&&ajustes.autoDrop&&b>=finSubida())aplicarSeccion('drop',b);
   else if(estado.seccion==='drop'&&b-estado.inicio>=DROP_COMPASES*4)aplicarSeccion('groove',b);
@@ -829,13 +902,10 @@ const DIBUJO={barras:dibujarBarras,diagonales:dibujarDiagonales,onda:dibujarOnda
 function patrones(beat){
   const f=ajustes.fondo.patron;
   if(f!=='auto')return DIBUJO[f]?[f]:[];
-  const desde=Math.max(0,Math.floor((beat-estado.inicio)/4));
-  switch(estado.seccion){
-    case 'intro':case 'break':return['particulas'];
-    case 'subida':return vis.tension>0.5?['haces','barras']:['haces'];
-    case 'drop':return mod(Math.floor(desde/4),2)?['onda','barras']:['lavado'];   // 4 compases de lavado, 4 de onda y barras
-    default:return[['barras','haces','diagonales'][mod(Math.floor(beat/32),3)]];
-  }
+  const sec=estado.seccion,op=(MOODS[ajustes.mood]||MOODS.escenario).fondos[sec]||[[]];
+  if(sec==='subida')return op[vis.tension>0.5?op.length-1:0];
+  if(sec==='drop')return op[mod(Math.floor(Math.max(0,beat-estado.inicio)/16),op.length)];   // rota cada 4 compases desde el drop
+  return op[mod(Math.floor(beat/32),op.length)];   // rota cada 8 compases
 }
 
 /* ───────── clips de video (capa 1) ─────────
@@ -1182,7 +1252,8 @@ function dibujarTexto(ctx,W,H,o){
   if(l2){ctx.globalAlpha*=0.85;textoEspaciado(ctx,l2,t2,500,t2*0.5*apertura,W/2,l1?y2:y1);}
   ctx.restore();
 }
-function capasFinales(ctx,W,H){   // flash, strobe y blackout van encima, sin ensuciar la estela
+function capasFinales(ctx,W,H){   // invert, flash, strobe y blackout van encima, sin ensuciar la estela
+  if(estado.mantener.invert){ctx.globalCompositeOperation='difference';ctx.fillStyle=rgba([255,255,255],1);ctx.fillRect(0,0,W,H);ctx.globalCompositeOperation='source-over';}
   const fl=Math.max(estado.flash,estado.strobe);
   if(fl>0.004){ctx.fillStyle=rgba(pal.flash,fl);ctx.fillRect(0,0,W,H);}
   if(estado.blackout>0.004){ctx.fillStyle=rgba([0,0,0],estado.blackout);ctx.fillRect(0,0,W,H);}
@@ -1264,6 +1335,7 @@ const ACCIONES=[
   {id:'flash',nombre:'Flash',tipo:'momento',fn:v=>mantener('flash',v)},
   {id:'blackout',nombre:'Blackout',tipo:'momento',fn:v=>mantener('blackout',v)},
   {id:'strobe',nombre:'Strobe',tipo:'momento',fn:v=>mantener('strobe',v)},
+  {id:'invert',nombre:'Invert',tipo:'momento',fn:v=>mantener('invert',v)},
   {id:'tension',nombre:'Tensión',tipo:'continuo',fn:v=>fijarTension(v)},
   {id:'opFondo',nombre:'Opacidad del fondo',tipo:'continuo',fn:v=>{ajustes.fondo.op=v;$('#rngFondo').value=Math.round(v*100);guardar();}},
   {id:'opLogo',nombre:'Opacidad del logo',tipo:'continuo',fn:v=>{ajustes.logo.op=v;$('#rngLogo').value=Math.round(v*100);guardar();}},
@@ -1274,7 +1346,9 @@ const ACCIONES=[
   {id:'lanzarTema',nombre:'Lanzar tema',tipo:'disparo',fn:()=>lanzarTema()},
   {id:'pararTema',nombre:'Parar tema',tipo:'disparo',fn:()=>pararTema()},
   {id:'temaMenos',nombre:'Tema −1 compás',tipo:'disparo',fn:()=>moverTema(-1)},
-  {id:'temaMas',nombre:'Tema +1 compás',tipo:'disparo',fn:()=>moverTema(1)}
+  {id:'temaMas',nombre:'Tema +1 compás',tipo:'disparo',fn:()=>moverTema(1)},
+  {id:'mood',nombre:'Siguiente mood',tipo:'disparo',fn:()=>pedirMood(siguienteMood())},
+  ...ORDEN_MOODS.map(id=>({id:'mood_'+id,nombre:'Mood '+MOODS[id].nombre,tipo:'disparo',fn:()=>pedirMood(id)}))
 ];
 function ciclarCapa2(){
   const orden=['logo','texto','ambos'];
@@ -1359,7 +1433,7 @@ function mantener(k,v){
   estado.mantener[k]=v;
   const b=document.querySelector('.mom[data-mantener="'+k+'"]');if(b)b.classList.toggle('activo',v);
 }
-function soltarTodo(){['flash','blackout','strobe'].forEach(k=>{if(estado.mantener[k])mantener(k,false);});}
+function soltarTodo(){['flash','blackout','strobe','invert'].forEach(k=>{if(estado.mantener[k])mantener(k,false);});}
 function fijarTension(v){estado.tensionManual=clamp(Math.round(v*100)/100);const p=Math.round(estado.tensionManual*100);$('#rngTension').value=p;$('#outTension').textContent=p;}
 function fijarAuto(v){
   estado.auto=v;$('#chipAuto').setAttribute('aria-pressed',String(v));$('#chkAuto').checked=v;
@@ -1386,11 +1460,13 @@ function teclaAbajo(e){
     case 'f':mantener('flash',true);break;
     case 'b':mantener('blackout',true);break;
     case 's':mantener('strobe',true);break;
+    case 'i':mantener('invert',true);break;
     case 'a':fijarAuto(!estado.auto);break;
     case 'c':siguienteClip();break;
     case 'l':lanzarTema();break;
     case 'k':pararTema();break;
     case 'x':ciclarCapa2();break;
+    case 'm':pedirMood(siguienteMood());break;
     case 'ArrowUp':e.preventDefault();fijarTension(estado.tensionManual+0.1);break;
     case 'ArrowDown':e.preventDefault();fijarTension(estado.tensionManual-0.1);break;
     case 'Enter':e.preventDefault();pantallaCompleta();break;
@@ -1399,7 +1475,7 @@ function teclaAbajo(e){
 }
 function teclaArriba(e){
   const k=e.key.length===1?e.key.toLowerCase():e.key;
-  if(k==='f')mantener('flash',false);else if(k==='b')mantener('blackout',false);else if(k==='s')mantener('strobe',false);
+  if(k==='f')mantener('flash',false);else if(k==='b')mantener('blackout',false);else if(k==='s')mantener('strobe',false);else if(k==='i')mantener('invert',false);
 }
 
 function construirUI(){
@@ -1417,12 +1493,14 @@ function construirUI(){
     const l=document.createElement('label');l.className='color';
     l.innerHTML='<input type="color" id="col-'+k+'"><span><b>'+nombre+'</b><small>'+uso+'</small></span>';
     cols.appendChild(l);
-    l.querySelector('input').addEventListener('input',e=>{ajustes.colores[k]=e.target.value;ajustes.paleta='personal';selP.value='personal';leerPaleta();dibujarMarca();guardar();});
+    l.querySelector('input').addEventListener('input',e=>{ajustes.colores[k]=e.target.value;ajustes.paleta='personal';selP.value='personal';leerPaleta();dibujarMarca();pintarMoods();guardar();});
   }
   const atajos=[['1 – 5','Intro, Groove, Break, Subida, Drop'],['Espacio','Marcar el 1 del compás'],['T','Tap tempo (empieza en el 1)'],
-    ['F','Flash (mantener)'],['B','Blackout (mantener)'],['S','Strobe (mantener)'],['↑ ↓','Tensión manual'],['C','Siguiente loop'],['L','Lanzar el siguiente tema (en el 1)'],['K','Parar el tema'],['X','Capa 2: logo, texto o ambos'],['A','Modo auto'],['Enter','Pantalla completa']];
+    ['F','Flash (mantener)'],['B','Blackout (mantener)'],['S','Strobe (mantener)'],['I','Invert (mantener)'],['↑ ↓','Tensión manual'],['C','Siguiente loop'],['L','Lanzar el siguiente tema (en el 1)'],['K','Parar el tema'],['M','Siguiente mood'],['X','Capa 2: logo, texto o ambos'],['A','Modo auto'],['Enter','Pantalla completa']];
   const dl=$('#atajos');
   for(const[t,d]of atajos){const dt=document.createElement('dt'),kb=document.createElement('kbd'),dd=document.createElement('dd');kb.textContent=t;dt.appendChild(kb);dd.textContent=d;dl.append(dt,dd);}
+  const dm=$('#descMoods');
+  for(const id of ORDEN_MOODS){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=MOODS[id].nombre;dd.textContent=MOODS[id].desc;dm.append(dt,dd);}
   pintarMapa();
 }
 function sincronizarControles(){
@@ -1439,8 +1517,21 @@ function sincronizarControles(){
   $('#selPaleta').value=PALETAS[ajustes.paleta]?ajustes.paleta:'personal';
   for(const[k]of ROLES)$('#col-'+k).value=ajustes.colores[k];
   $('#chkPulsoAudio').checked=ajustes.pulsoAudio;$('#rngSens').value=ajustes.umbralKick;$('#outSens').textContent=ajustes.umbralKick+' dB';
-  $('#chkSeguro').checked=ajustes.strobeSeguro;
+  $('#chkSeguro').checked=ajustes.strobeSeguro;$('#chkMoodDrop').checked=ajustes.moodEnDrop;
   fijarTension(estado.tensionManual);
+  pintarMoods();
+}
+function pintarMoods(){
+  const caja=$('#moods');caja.textContent='';
+  for(const id of ORDEN_MOODS){
+    const m=MOODS[id],colores=id===ajustes.mood?ajustes.colores:estadoMood(id).colores;
+    const b=document.createElement('button');b.type='button';b.title=m.desc;
+    b.className='mood'+(estado.moodPend&&estado.moodPend.id===id?' pendiente':'');b.setAttribute('aria-pressed',String(id===ajustes.mood));
+    const sw=document.createElement('span');sw.className='muestras';sw.setAttribute('aria-hidden','true');
+    for(const k of['base','tension','acento']){const i=document.createElement('i');i.style.background=colores[k];sw.appendChild(i);}
+    const t=document.createElement('span');t.className='mood-nombre';t.textContent=m.nombre;
+    b.append(sw,t);b.addEventListener('click',()=>pedirMood(id));caja.appendChild(b);
+  }
 }
 async function listarDispositivos(){
   try{
@@ -1464,6 +1555,8 @@ function enlazar(){
   cambio('#chkFondo',e=>{ajustes.fondo.on=e.target.checked;guardar();});
   cambio('#rngFondo',e=>{ajustes.fondo.op=e.target.value/100;guardar();},'input');
   cambio('#selPatron',e=>{ajustes.fondo.patron=e.target.value;guardar();});
+  cambio('#chkMoodDrop',e=>{ajustes.moodEnDrop=e.target.checked;guardar();});
+  cambio('#btnResetMood',restablecerMood,'click');
   cambio('#selFuenteFondo',e=>{ajustes.fondo.fuente=e.target.value;guardar();if(usaClips()&&!clips.actual)cortarClip(estado.seccion);});
   cambio('#selPaneles',e=>{ajustes.paneles.n=+e.target.value;guardar();});
   cambio('#rngHueco',e=>{ajustes.paneles.hueco=e.target.value/100;guardar();},'input');
@@ -1639,7 +1732,7 @@ if(document.fonts&&document.fonts.ready)document.fonts.ready.then(dibujarMarca);
 if(reloj.fuente==='midi')activarMidi();
 programar();
 
-window.__motorPR={estado,reloj,audio,ajustes,vis,det,clips,LOGO,dibujarLogo,pedirSeccion,aplicarSeccion,fijarTension,agregarClips,lanzarTema,pararTema,moverTema};
+window.__motorPR={estado,reloj,audio,ajustes,vis,det,clips,LOGO,dibujarLogo,pedirSeccion,aplicarSeccion,fijarTension,agregarClips,lanzarTema,pararTema,moverTema,pedirMood,aplicarMood};
 })();
 </script>
 </body>
