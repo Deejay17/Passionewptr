@@ -39,7 +39,7 @@ Sacro, Bio-Hazard y Perreo son los bloques del show de Halloween y mantienen el 
 ## Uso rápido
 
 1. Abre `motor-visual-pr.html` en **Chrome** (Safari no tiene Web MIDI).
-2. Pulsa **Abrir ventana de salida**, arrástrala al proyector, haz clic en ella y pulsa `Enter`. La ventana principal queda como monitor y control.
+2. Pulsa **Abrir ventana de salida**, arrástrala al proyector, haz clic en ella y pulsa `Enter`. La ventana principal queda como monitor y control; con **Pantalla completa** (arriba a la derecha, o `Mayús` + `Enter`) la interfaz entera ocupa la pantalla del portátil, como una mesa de control.
 3. Durante el set solo necesitas las teclas `1`–`5` (secciones) y `Espacio` (marcar el 1).
 
 | Tecla | Acción |
@@ -57,7 +57,8 @@ Sacro, Bio-Hazard y Perreo son los bloques del show de Halloween y mantienen el 
 | `O` | Logo visible o apagado |
 | `X` | Capa 2: logo, texto o ambos |
 | `A` | Modo auto |
-| `Enter` | Pantalla completa |
+| `Enter` | Pantalla completa de la salida |
+| `Mayús` + `Enter` | Toda la interfaz a pantalla completa (modo cabina) |
 
 ## Momentos de impacto
 

@@ -70,6 +70,17 @@ kbd{font:500 11px/1 var(--f-mono);color:var(--muted);border:1px solid var(--line
 .escena.r21{aspect-ratio:2/1}
 .zona-segura{position:absolute;left:0;right:0;top:25%;bottom:25%;border-top:1px dashed var(--muted);border-bottom:1px dashed var(--muted);opacity:.55;pointer-events:none}
 .escena:fullscreen .zona-segura{display:none}
+/* modo cabina: toda la interfaz a pantalla completa; el monitor crece y los ajustes se desplazan aparte */
+body.cabina{height:100vh;overflow:hidden;display:flex;flex-direction:column}
+body.cabina .top{flex:none}
+body.cabina .layout{flex:1;min-height:0;overflow-y:auto;padding-block:12px}
+@media (min-width:1040px){
+  body.cabina .layout{overflow:hidden;grid-template-columns:minmax(0,1fr) 380px;align-items:stretch}
+  body.cabina .col-escena{position:static;overflow-y:auto;min-height:0;align-content:start}
+  body.cabina .panel{overflow-y:auto;min-height:0;padding-right:4px;align-content:start}
+  body.cabina .escena{width:min(100%,calc((100vh - 330px)*16/9));margin-inline:auto}
+  body.cabina .escena.r21{width:min(100%,calc((100vh - 330px)*2))}
+}
 .escena:fullscreen{border:0;border-radius:0;aspect-ratio:auto;width:100vw;height:100vh}
 .escena:fullscreen .hud{display:none}
 .hud{position:absolute;top:10px;left:12px;display:flex;gap:10px;align-items:baseline;font:600 11px/1.2 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--fg);text-shadow:0 1px 3px var(--stage);pointer-events:none}
@@ -207,6 +218,7 @@ body.soltando .escena{outline:2px dashed var(--live);outline-offset:4px}
     <div class="lectura"><span id="txtCompas">1</span><small>/ 16</small></div>
     <button class="chip" id="chipAuto" type="button" aria-pressed="false" title="Modo auto: cambia de sección leyendo el audio"><i class="led"></i>Auto</button>
     <span class="chip" id="chipFps" title="Cuadros por segundo de la salida" data-estado="ok"><i class="led"></i><span id="txtFps">60 fps</span></span>
+    <button class="chip" id="btnCabina" type="button" title="Toda la interfaz a pantalla completa (Mayús + Enter)"><span>Pantalla completa</span></button>
   </div>
 </header>
 
@@ -1682,11 +1694,20 @@ function mostrarSalida(){
   $('#hudSalida').hidden=!a;
   $('#btnSalida').textContent=a?'Ir a la ventana de salida':'Abrir ventana de salida';
 }
-function pantallaCompleta(){
+function pantallaCompleta(){   // solo la salida (la escena) a pantalla completa
   if(salidaAbierta()){aviso('La salida está en otra ventana: haz clic en ella y pulsa Enter.');salida.win.focus();return;}
-  if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});return;}
+  if(document.fullscreenElement===$('#escena')){document.exitFullscreen().catch(()=>{});return;}
   pedirPantallaCompleta($('#escena'));
 }
+function pantallaCabina(){   // toda la interfaz a pantalla completa, como una mesa de control
+  if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});return;}
+  pedirPantallaCompleta(document.documentElement);
+}
+document.addEventListener('fullscreenchange',()=>{
+  const cabina=document.fullscreenElement===document.documentElement;
+  document.body.classList.toggle('cabina',cabina);
+  $('#btnCabina span').textContent=cabina?'Salir de pantalla completa':'Pantalla completa';
+});
 
 /* ───────── MIDI ───────── */
 const ACCIONES=[
@@ -1839,7 +1860,7 @@ function teclaAbajo(e){
     case 'o':alternarLogo();break;
     case 'ArrowUp':e.preventDefault();fijarTension(estado.tensionManual+0.1);break;
     case 'ArrowDown':e.preventDefault();fijarTension(estado.tensionManual-0.1);break;
-    case 'Enter':e.preventDefault();pantallaCompleta();break;
+    case 'Enter':e.preventDefault();if(e.shiftKey)pantallaCabina();else pantallaCompleta();break;
     case 'Escape':if(midi.aprendiendo){midi.aprendiendo=null;pintarMapa();}break;
   }
 }
@@ -1866,7 +1887,7 @@ function construirUI(){
     l.querySelector('input').addEventListener('input',e=>{ajustes.colores[k]=e.target.value;ajustes.paleta='personal';selP.value='personal';leerPaleta();dibujarMarca();pintarMoods();guardar();});
   }
   const atajos=[['1 – 5','Intro, Groove, Break, Subida, Drop'],['Espacio','Marcar el 1 del compás'],['T','Tap tempo (empieza en el 1)'],
-    ['F','Flash (mantener)'],['B','Blackout (mantener)'],['S','Strobe (mantener)'],['I','Invert (mantener)'],['G','Glitch (mantener)'],['↑ ↓','Tensión manual'],['C','Siguiente loop'],['L','Lanzar el siguiente tema (en el 1)'],['K','Parar el tema'],['M','Siguiente mood'],['P','Frase de impacto'],['O','Logo visible o apagado'],['X','Capa 2: logo, texto o ambos'],['A','Modo auto'],['Enter','Pantalla completa']];
+    ['F','Flash (mantener)'],['B','Blackout (mantener)'],['S','Strobe (mantener)'],['I','Invert (mantener)'],['G','Glitch (mantener)'],['↑ ↓','Tensión manual'],['C','Siguiente loop'],['L','Lanzar el siguiente tema (en el 1)'],['K','Parar el tema'],['M','Siguiente mood'],['P','Frase de impacto'],['O','Logo visible o apagado'],['X','Capa 2: logo, texto o ambos'],['A','Modo auto'],['Enter','Pantalla completa de la salida'],['Mayús + Enter','Toda la interfaz a pantalla completa']];
   const dl=$('#atajos');
   for(const[t,d]of atajos){const dt=document.createElement('dt'),kb=document.createElement('kbd'),dd=document.createElement('dd');kb.textContent=t;dt.appendChild(kb);dd.textContent=d;dl.append(dt,dd);}
   const dm=$('#descMoods');
@@ -2006,6 +2027,7 @@ function enlazar(){
   cambio('#btnMidi',activarMidi,'click');
   cambio('#btnSalida',abrirSalida,'click');
   cambio('#btnPantalla',pantallaCompleta,'click');
+  cambio('#btnCabina',pantallaCabina,'click');
   cambio('#btnTap',tap,'click');
   cambio('#btnLanzar',()=>lanzarTema(),'click');
   cambio('#btnParar',pararTema,'click');
