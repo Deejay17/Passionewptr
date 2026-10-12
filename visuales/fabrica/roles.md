@@ -89,6 +89,10 @@ bash conformar.sh coro1.mp4 128 8 --rol coro --luego coro2.mp4 --perfil psicoroo
 
 `precoro` vale como `subida` y `drop` como `coro`. Si el nombre ya lleva el rol (`drop_contencion`), no se repite.
 
+## Si el golpe no cae donde debía
+
+Un generador nunca clava el tiempo: el impacto del coro puede caer en el segundo 0,6 y no en el 0. No hace falta regenerar: en el motor, **Golpes** marca en qué cuadro cae el golpe 1 y los demás, y el clip se ajusta solo (detalles en el [README del motor](../README.md#marcar-los-golpes-de-un-video-el-warp)). Para que el archivo ya salga corregido, la misma información va a `conformar.sh --marcas`.
+
 ## En el motor
 
 Arrastra la carpeta y listo: cada video va a su sección por el nombre. En la lista de clips se ve y se puede cambiar (tipo Loop o Subida, botones I G B S D).

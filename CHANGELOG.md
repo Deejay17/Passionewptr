@@ -4,6 +4,11 @@ Qué cambió en cada commit, de lo más nuevo a lo más viejo. Cada entrada llev
 
 ## 2026-10-12
 
+### Golpes: el warp de los videos [sin publicar]
+- Botón **Golpes** en cada clip: se marca en qué cuadro cae el golpe 1 (el que abre la secuencia) y los golpes que se quiera, cuadro a cuadro y sobre una línea de tiempo con la rejilla del video. Con dos marcas el motor calcula el BPM del video; con más, estira o encoge cada tramo para que todos los golpes caigan en los de la música. **Reproducir con clic** lo deja comprobar de oído.
+- Los loops entran en su sección por el golpe 1, los temas hacen sonar sus **previos** antes del 1 y las subidas llevan el golpe 1 al principio y la última marca al drop.
+- `conformar.sh --marcas 0.62:1,4.40:9` aplica el mismo warp al archivo y lo hace empezar en el golpe 1; el editor da la línea ya escrita.
+
 ### Los cinco roles de un video y Remotion [68fa5b9]
 - **Roles**: cada video se hace para un momento (intro, groove, break, subida o coro), que se decide en el guion, da forma al prompt y va en el nombre del archivo. Ficha de cada rol con su plantilla de prompt en [`roles.md`](visuales/fabrica/roles.md); los guiones del show tienen ya su rol.
 - `conformar.sh --rol`: toma entera, con o sin fundido según el rol, y el rol delante del nombre. `precoro` vale como `subida` y `drop` como `coro`.

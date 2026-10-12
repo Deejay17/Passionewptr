@@ -14,6 +14,10 @@
 #   coro (o drop)          toma entera, corte seco: vuelve a su impacto cada N compases
 # y pone el rol delante del nombre (coro_sacro_128bpm_8c.mp4) para que el motor lo reconozca.
 #
+# Con --marcas se le dice en qué segundo cae cada golpe (lo que se marca en «Golpes» del motor,
+# que da la línea ya escrita): el video se estira o se encoge tramo a tramo para que cada golpe
+# caiga en su sitio al BPM pedido, y empieza en el golpe 1 (lo de antes, los previos, se quita).
+#
 # Uso:
 #   bash conformar.sh ENTRADA BPM COMPASES [opciones]
 #
@@ -31,12 +35,15 @@
 #   --entero            usa la toma entera: la estira o la encoge a N compases, sin recortar ni fundir
 #   --luego TOMA        pega otra toma a continuación antes de conformar (se puede repetir)
 #   --rol ROL           intro, groove, break, subida (precoro) o coro (drop); ver arriba
+#   --marcas T:G,T:G    en el segundo T del video cae el golpe G (1 = el golpe 1); ver arriba
 #
 # Ejemplos:
 #   bash conformar.sh humo.mov 128 8 --nombre break_humo
 #   → break_humo_128bpm_8c.mp4   (8 compases a 128 BPM = 15 s exactos, empalme invisible)
 #   bash conformar.sh toma1.mp4 128 8 --rol subida --luego toma2.mp4 --nombre sacro
 #   → subida_sacro_128bpm_8c.mp4 (las dos tomas de 8 s encajadas en 15 s; el motor la usa como Subida)
+#   bash conformar.sh veo.mp4 128 4 --rol coro --marcas 0.62:1,2.48:5,4.40:9
+#   → el golpe 1 del video (0,62 s) en el primer cuadro y los golpes 5 y 9 justo en los compases 2 y 3
 #
 # Pensado para macOS (bash 3.2 + herramientas BSD); también funciona en Linux.
 # Requiere ffmpeg y ffprobe (en Mac: brew install ffmpeg).
@@ -53,7 +60,7 @@ case "${1:-}" in -h|--help) ayuda; exit 0 ;; esac
 [ $# -ge 3 ] || { ayuda >&2; exit 2; }
 
 ENTRADA="$1"; BPM="$2"; COMPASES="$3"; shift 3
-DESDE=0; FUNDIDO=1; FUNDIDO_DADO=0; NOMBRE=""; SALIDA=""; TAM="1920x1080"; FPS=30; MBPS=""; HAP=0; ENTERO=0; ROL=""
+DESDE=0; DESDE_DADO=0; MARCAS=""; FUNDIDO=1; FUNDIDO_DADO=0; NOMBRE=""; SALIDA=""; TAM="1920x1080"; FPS=30; MBPS=""; HAP=0; ENTERO=0; ROL=""
 TOMAS=("$ENTRADA")
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -67,7 +74,8 @@ while [ $# -gt 0 ]; do
       esac
       shift 2 ;;
     --luego) [ -n "${2:-}" ] || error "--luego necesita el archivo de la toma"; TOMAS+=("$2"); shift 2 ;;
-    --desde) DESDE="${2:-}"; shift 2 ;;
+    --desde) DESDE="${2:-}"; DESDE_DADO=1; shift 2 ;;
+    --marcas) MARCAS="${2:-}"; shift 2 ;;
     --fundido) FUNDIDO="${2:-}"; FUNDIDO_DADO=1; shift 2 ;;
     --nombre) NOMBRE="${2:-}"; shift 2 ;;
     --salida) SALIDA="${2:-}"; shift 2 ;;
@@ -103,6 +111,11 @@ if [ "$HAP" = "1" ]; then
   esac
 fi
 printf '%s' "$TAM" | grep -Eq '^[0-9]+x[0-9]+$' || error "--tam tiene que ser ANCHOxALTO, por ejemplo 1920x1080"
+if [ -n "$MARCAS" ]; then
+  printf '%s' "$MARCAS" | grep -Eq '^[0-9]+([.][0-9]+)?:-?[0-9]+(,[0-9]+([.][0-9]+)?:-?[0-9]+)*$' \
+    || error "--marcas va así: SEGUNDO:GOLPE separados por comas, por ejemplo 0.62:1,4.40:9"
+  [ "$DESDE_DADO" = "0" ] || error "usa --marcas o --desde, no los dos (con marcas el video empieza en el golpe 1)"
+fi
 [ "$(calc "$BPM >= 60 && $BPM <= 200")" = "1.000000" ] || error "el BPM tiene que estar entre 60 y 200"
 [ "$(calc "$COMPASES >= 1")" = "1.000000" ] || error "como mínimo, 1 compás"
 ANCHO="${TAM%x*}"; ALTO="${TAM#*x}"
@@ -136,7 +149,48 @@ for T in "${TOMAS[@]}"; do DUR=$(calc "$DUR + $(duracion "$T")"); done
 DISP=$(calc "$DUR - $DESDE")
 [ "$(calc "$DISP > 0.1")" = "1.000000" ] || error "--desde $DESDE queda fuera del video (dura $DUR s)"
 
-if [ "$ENTERO" = "1" ]; then
+WARP=""
+if [ -n "$MARCAS" ]; then
+  # golpe G en el segundo T → en la salida, el golpe G cae en (G − 1) × 60 / BPM. Entre marcas, una recta;
+  # antes de la primera y después de la última, el ritmo del tramo más cercano. Lo negativo (previos) se quita.
+  INFO=$(printf '%s' "$MARCAS" | tr ',' '\n' | awk -F: -v spb="$(calc "60 / $BPM")" -v dur="$DUR" '
+    { t[NR]=$1; b[NR]=$2-1 }
+    END {
+      n=NR
+      for (i=1; i<=n; i++) for (j=i+1; j<=n; j++) if (b[j]<b[i]) { x=b[i]; b[i]=b[j]; b[j]=x; x=t[i]; t[i]=t[j]; t[j]=x }
+      for (i=1; i<n; i++) if (b[i+1]==b[i] || t[i+1]<=t[i]) { print "ERROR"; exit }
+      if (n==1) { if (b[1]!=0) { print "UNA"; exit } printf "DESDE %.6f\n", t[1]; exit }
+      expr=""; maxk=0
+      for (i=n-1; i>=1; i--) {
+        k=(b[i+1]-b[i])*spb/(t[i+1]-t[i]); if (k>maxk) maxk=k
+        e=sprintf("(%.6f+(T-%.6f)*%.9f)", b[i]*spb, t[i], k)
+        expr = (i==n-1) ? e : sprintf("if(lt(T\\,%.6f)\\,%s\\,%s)", t[i+1], e, expr)
+      }
+      kfin=(b[n]-b[n-1])*spb/(t[n]-t[n-1]); fin=b[n]*spb+(dur-t[n])*kfin
+      k1=(b[2]-b[1])*spb/(t[2]-t[1]); g1=t[1]-b[1]*spb/k1
+      bpmv=(b[n]-b[1])*60/(t[n]-t[1])
+      printf "WARP %s\nMAXK %.6f\nFIN %.6f\nGOLPE1 %.6f\nBPMV %.1f\nN %d\n", expr, maxk, fin, g1, bpmv, n
+    }')
+  case "$INFO" in
+    ERROR) error "las marcas no van en orden: cada golpe tiene que caer después del anterior" ;;
+    UNA) error "con una sola marca, que sea la del golpe 1 (por ejemplo 0.62:1)" ;;
+    DESDE*) DESDE=$(printf '%s' "$INFO" | awk '{print $2}'); DISP=$(calc "$DUR - $DESDE"); MARCAS="" ;;
+    *)
+      WARP=$(printf '%s\n' "$INFO" | awk '$1=="WARP"{print $2}')
+      MAXK=$(printf '%s\n' "$INFO" | awk '$1=="MAXK"{print $2}')
+      FIN_W=$(printf '%s\n' "$INFO" | awk '$1=="FIN"{print $2}')
+      GOLPE1=$(printf '%s\n' "$INFO" | awk '$1=="GOLPE1"{print $2}')
+      BPMV=$(printf '%s\n' "$INFO" | awk '$1=="BPMV"{print $2}')
+      NMARCAS=$(printf '%s\n' "$INFO" | awk '$1=="N"{print $2}')
+      [ "$(calc "$FIN_W >= $NECESITA - 0.001")" = "1.000000" ] \
+        || error "con esas marcas el video llega a $(awk "BEGIN{printf \"%.1f\", $FIN_W*$BPM/240}") compases desde el golpe 1; pide menos compases"
+      ;;
+  esac
+fi
+
+if [ -n "$WARP" ]; then
+  ESTIRA=$MAXK   # solo para decidir si hay que interpolar cuadros (algún tramo va más lento que el original)
+elif [ "$ENTERO" = "1" ]; then
   # la toma entera pasa a durar N compases (más el fundido, si lo hay): lo que el guion
   # pone al 50 % cae a mitad de los compases
   ESTIRA=$(calc "$NECESITA / $DISP")
@@ -172,7 +226,11 @@ if [ ${#TOMAS[@]} -gt 1 ]; then
   PREVIO="$PREVIO${ETIQ}concat=n=${#TOMAS[@]}:v=1:a=0[unidas];"
   ORIGEN="[unidas]"
 fi
-BASE="$PREVIO${ORIGEN}trim=start=$DESDE,setpts=(PTS-STARTPTS)*$ESTIRA,$RITMO,$ENCUADRE"
+if [ -n "$WARP" ]; then
+  BASE="$PREVIO${ORIGEN}setpts='($WARP)/TB',trim=start=0,$RITMO,$ENCUADRE"
+else
+  BASE="$PREVIO${ORIGEN}trim=start=$DESDE,setpts=(PTS-STARTPTS)*$ESTIRA,$RITMO,$ENCUADRE"
+fi
 if [ "$(calc "$FUND > 0")" = "1.000000" ]; then
   # el primer tramo del loop es una mezcla: empieza siendo lo que viene justo después del final
   # y termina siendo el principio, así el último cuadro empalma con el primero sin salto
@@ -195,7 +253,10 @@ case "$ROL" in
   coro) printf 'Rol:      coro · entra en el 1 del drop desde su primer cuadro y vuelve al impacto cada %s compases\n' "$COMP_TXT" ;;
 esac
 [ "$EXACTO" = "1" ] || printf 'Aviso:    a %s fps el loop no cae en un cuadro exacto (se redondea). Con 120 BPM o loops de 4 u 8 compases a 128 es exacto.\n' "$FPS"
-if [ "$ENTERO" = "1" ]; then
+if [ -n "$WARP" ]; then
+  printf 'Marcas:   %s golpes marcados; golpe 1 en %.3f s; el video iba a %s BPM y queda a %s, tramo a tramo\n' "$NMARCAS" "$GOLPE1" "$BPMV" "$BPM_TXT"
+  [ "$(calc "$GOLPE1 > 0.01")" = "1.000000" ] && printf 'Previos:  %.2f s antes del golpe 1 (se quitan: el archivo empieza en el golpe 1)\n' "$GOLPE1"
+elif [ "$ENTERO" = "1" ]; then
   printf 'Encaje:   la toma de %.2f s pasa a %.2f s (×%.3f, %s)\n' "$DISP" "$NECESITA" "$ESTIRA" "$([ "$(calc "$ESTIRA > 1")" = "1.000000" ] && printf 'más lenta' || printf 'más rápida')"
   [ "$(calc "$ESTIRA > 1.6 || $ESTIRA < 0.6")" = "1.000000" ] && printf 'Aviso:    el cambio de velocidad es grande y se notará; mejor generar tomas que sumen cerca de %.1f s.\n' "$NECESITA"
 else

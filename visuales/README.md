@@ -112,6 +112,25 @@ Para lanzarlo en el momento justo:
 3. Si no marcaste el 1, `L` lo hace entrar en el próximo 1.
 4. Si quedó corrido, **−1 compás** / **+1 compás** lo corrige en vivo.
 
+### Marcar los golpes de un video (el warp)
+
+Un video hecho con IA casi nunca tiene su primer golpe en el primer cuadro, ni sus golpes a un tempo exacto. Con el botón **Golpes** de cada clip se le dice dónde caen, como la rejilla de Traktor o los marcadores de warp de Ableton:
+
+1. Busca el cuadro del primer golpe fuerte (clic en la línea de tiempo y `←` `→` cuadro a cuadro) y pulsa **Aquí cae el golpe 1**. Es el que abre la secuencia: lo que va antes son los **previos**.
+2. Ve a otro golpe claro más adelante, escribe su número (el 9 es el 1 del compás 3; al lado se ve en compás y tiempo) y pulsa **Marcar este golpe**. Con dos marcas el motor ya sabe a qué tempo va el video y pone su BPM solo.
+3. Si el video acelera o frena, marca más golpes: entre cada dos marcas el motor estira o encoge ese tramo para que todos caigan en los golpes de la música.
+4. **Reproducir con clic** suena un clic en cada golpe del video (más agudo en el 1 de cada compás) para comprobar que encaja.
+
+Qué hace el motor con las marcas:
+
+| Tipo | Con marcas |
+|---|---|
+| Loop | Al empezar su sección entra en el golpe 1 (el impacto del coro cae en el 1) y repite los compases enteros que hay desde ahí |
+| Tema | El golpe 1 cae en el 1 que marcaste o en el próximo, y los previos suenan antes, de modo que la entrada se oye completa |
+| Subida | El golpe 1 cae al empezar la subida y la última marca, justo en el drop |
+
+En las pruebas, un video con tres marcas a tempos distintos se mantuvo a 4 ms de media de su sitio, y un tema con 3 tiempos de previos arrancó 3 tiempos antes del 1 y llegó al 1 en su cuadro. Las marcas se recuerdan por nombre de archivo. El editor da además la línea de `conformar.sh --marcas` para que el archivo ya salga con ese warp (para Resolume o de respaldo).
+
 ### El logo sobre los videos
 
 Cada clip decide qué hace el logo encima: **encima**, **en la esquina** (pequeño, abajo a la derecha) u **oculto**. Los temas y las subidas, que son tus videos grandes, vienen con el logo oculto y los loops con el logo encima. El cambio se hace con un fundido suave y se recuerda por nombre de archivo. En los whiteouts el logo vuelve a aparecer en silueta. La tecla `O` apaga o enciende el logo al instante.
@@ -192,6 +211,7 @@ Todo está en `motor-visual-pr.html`, en bloques comentados:
 | El tinte de los clips | `function dibujarClip` |
 | Cómo se amarra un clip al tempo | `function amarrar` |
 | Cómo recorre la subida un clip de subida | `function amarrarSubida` |
+| Los golpes de un clip (el warp) | `function tDeGolpe` y, para el editor, `function abrirGolpes` |
 | Cuándo entra un tema | `function lanzarTema` |
 | Partículas, haces y lavado | `function dibujarParticulas`, `dibujarHaces`, `dibujarLavado` |
 | Los paneles LED | `function componerPaneles` |

@@ -58,6 +58,8 @@ Qué pedir en cada tramo:
 | Tercer cuarto | Aceleración: cámara más rápida, la luz parpadea |
 | Último cuarto | Carrera final hacia el sujeto y la imagen **satura a blanco** (o se funde a negro) |
 
+Si la toma no respeta los bloques (el destello llega medio compás tarde, el impacto no cae en el primer cuadro), marca sus golpes en **Golpes** del motor: el clip se estira o se encoge tramo a tramo hasta encajar.
+
 El final en blanco o en negro no es estético, es técnico: el motor apaga la pantalla en el último tiempo y la enciende con flash o whiteout en el 1 del drop. El empalme queda tapado, y el medio segundo que el generador se desvía desaparece ahí.
 
 Además, sobre el clip el motor sigue haciendo lo suyo: el blur respira con cada tiempo, el glitch entra con el redoble y el strobe en la segunda mitad.
