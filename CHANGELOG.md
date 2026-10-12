@@ -4,6 +4,11 @@ Qué cambió en cada commit, de lo más nuevo a lo más viejo. Cada entrada llev
 
 ## 2026-10-12
 
+### Jerarquía visual [c57119c]
+- Un solo protagonista a la vez: el logo manda en el intro y en el break, el fondo en el groove y en la subida (el logo más chico y tenue), y en el drop el logo vuelve a mandar solo en los 4 primeros tiempos de cada frase. Cuando el fondo lo deja en silueta, el logo vuelve al frente.
+- Cada mood puede cambiar el reparto: Líneas deja siempre el logo al frente, Perreo lo manda al fondo en el groove y Cruz lo hace golpear en el groove.
+- Casilla *Jerarquía visual* en *Logo* para apagarlo. Con un video en pantalla no cambia nada.
+
 ### Moods Humo y Cruz: humo y siluetas [4d72802]
 - **Humo**: niebla densa a ras del escenario que se ve donde le da la luz, un contraluz detrás de la cabina que deja en silueta al DJ y al logo (Shadow Crafting), una ventana de luz con láminas que se encienden una por tiempo, haces en la subida y hélices de puntos en el drop.
 - **Cruz**: la imagen recortada en cruz con cuatro hélices de puntos en espejo; el pulso viaja del centro a las puntas en cada tiempo.
