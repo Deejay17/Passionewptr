@@ -1,5 +1,7 @@
 # Subida y coro: que el video se emocione en el momento justo
 
+Los cinco roles (intro, groove, break, subida y coro), con la plantilla de prompt de cada uno, están en [`roles.md`](roles.md). Aquí va el porqué y el ejemplo completo de la subida y el coro.
+
 Ningún generador de video entiende de BPM ni clava un golpe de medio segundo. Por eso el trabajo se reparte en tres:
 
 | Quién | Pone | Precisión |
@@ -27,7 +29,7 @@ Escribe la toma de 8 s en **4 bloques de 2 s**, uno por compás:
 [00:06-00:08] compás 4
 ```
 
-Después, `conformar.sh --entero` estira o encoge la toma entera hasta los compases exactos del BPM real, sin recortar el final: lo que el prompt pone en el segundo 4 cae al empezar el compás 3. A 128 BPM, 4 compases son 7,5 s, así que la toma se acelera un 6 %, y no se nota.
+Después, `conformar.sh --rol` (o `--entero`) estira o encoge la toma entera hasta los compases exactos del BPM real, sin recortar el final: lo que el prompt pone en el segundo 4 cae al empezar el compás 3. A 128 BPM, 4 compases son 7,5 s, así que la toma se acelera un 6 %, y no se nota.
 
 Para 90–100 BPM (Perreo a 95, Sacro a 100) una toma de 8 s son **3 compases**: bloques `[00:00-00:03]`, `[00:03-00:05]`, `[00:05-00:08]`.
 
@@ -106,12 +108,12 @@ white beam, a burst of embers exploding outward.
 **Conformar:**
 
 ```bash
-bash conformar.sh toma1.mp4 128 8 --entero --luego toma2.mp4 --perfil psicoroom --nombre sacro_subida
-bash conformar.sh coro1.mp4 128 8 --entero --luego coro2.mp4 --perfil psicoroom --nombre sacro_coro
+bash conformar.sh toma1.mp4 128 8 --rol subida --luego toma2.mp4 --perfil psicoroom --nombre sacro
+bash conformar.sh coro1.mp4 128 8 --rol coro --luego coro2.mp4 --perfil psicoroom --nombre sacro
 # → sacro_subida_128bpm_8c.mp4 (tipo Subida)  y  sacro_coro_128bpm_8c.mp4 (loop del drop)
 ```
 
-Los dos van con `--entero` para que cada bloque caiga en su compás. Sin fundido, el coro vuelve a su primer cuadro cada 8 compases con un corte seco: un nuevo impacto al empezar la frase.
+Los dos usan la toma entera para que cada bloque caiga en su compás. Sin fundido, el coro vuelve a su primer cuadro cada 8 compases con un corte seco: un nuevo impacto al empezar la frase.
 
 En el motor: pon la subida en **8 compases**, arrastra los dos archivos y lanza la subida (`4`) en el 1 de la subida de la canción. El resto va solo.
 

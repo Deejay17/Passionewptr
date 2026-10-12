@@ -1,0 +1,10 @@
+# dependencias de Node (se instalan con npm install)
+node_modules/
+
+# lo que renderiza Remotion
+visuales/fabrica/remotion/salida/
+
+# tu tipografía propia (por ejemplo Pirulen): tiene licencia, no se sube
+visuales/fabrica/remotion/public/fuentes/propia.*
+
+.DS_Store

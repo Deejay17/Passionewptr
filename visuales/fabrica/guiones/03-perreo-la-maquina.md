@@ -2,14 +2,14 @@
 
 | | |
 |---|---|
-| Archivo final | `drop_lamaquina_95bpm_2c.mp4` |
+| Rol | **Coro** (drop) |
+| Archivo final | `coro_lamaquina_95bpm_2c.mp4` |
 | BPM de producción | 95 (reguetón) |
 | Compases | 2 (a 95 BPM = 5,05 s) |
-| Tipo | Loop de impacto |
-| Sección / mood | Drop · **Perreo** |
+| Mood | **Perreo** |
 | Formato | 2048 × 1024, 60 fps, sin audio |
 | Paleta | Fondo `#000000` · blanco `#ffffff` |
-| Ruta | **El motor**, en vivo: mood Perreo + frase de impacto (`P`) + strobe. Para Resolume se graba a archivo |
+| Ruta | **El motor**, en vivo: mood Perreo + frase de impacto (`P`) + strobe. Como archivo (para Resolume o para tenerlo listo): **Remotion** |
 
 ## La idea en una frase
 
@@ -32,10 +32,17 @@ Golpe tipográfico callejero: cada tiempo es un portazo.
 2. En *Frases de impacto*, escribe `LA MÁQUINA` y elige "Una palabra por tiempo".
 3. En el drop: `P` para la frase, mantener `S` para el strobe y `F` para el whiteout. O marca "Lanzar la siguiente frase en cada drop" y "Whiteout de 1 compás".
 
-## Conformar (si se graba para Resolume)
+## Como archivo, con Remotion
+
+Ya está programado en [`../remotion/`](../remotion/): una palabra por tiempo, strobe seguro en el compás 2 y whiteout con la frase en silueta en el último tiempo.
 
 ```bash
-bash conformar.sh grabacion_perreo.mp4 95 2 --perfil psicoroom --hap --fundido 0 --nombre drop_lamaquina
+cd ../remotion && npm run render -- LaMaquina
+# → salida/coro_lamaquina_95bpm_2c.mp4 (303 cuadros exactos a 60 fps)
 ```
 
-`--fundido 0`: en un clip de impacto el corte seco es parte del golpe.
+Si lo grabas de otra forma, confórmalo como coro; el corte seco es parte del golpe:
+
+```bash
+bash conformar.sh grabacion_perreo.mp4 95 2 --rol coro --perfil psicoroom --hap --nombre lamaquina
+```

@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| Archivo final | `tema_pr_cromo_120bpm_8c.mp4` |
+| Rol | **Intro**: el logo abre el set (si lo quieres lanzar con `L`, márcalo como Tema en la lista de clips) |
+| Archivo final | `intro_pr_cromo_120bpm_8c.mp4` |
 | BPM de producción | 120 (8 compases = 16 s; un tiempo = 30 cuadros exactos a 60 fps) |
 | Compases | 8 |
-| Tipo | Loop (o tema de entrada del set) |
-| Sección / mood | Intro y drop · **Sacro** o **Perreo** |
+| Mood | **Sacro** o **Perreo** |
 | Formato | 2048 × 1024 (master 3840 × 1920), 60 fps, sin audio |
 | Paleta | Fondo `#000000` · cromo negro · luz blanca fría |
 | Ruta | **3D por script** (Blender), con el vector oficial del logo |
@@ -41,5 +41,5 @@ El logo extruido en 3D, **cromo negro** con bordes biselados que atrapan la luz,
 No hace falta si el render ya mide 8 compases exactos; para la copia de Resolume:
 
 ```bash
-bash conformar.sh render_pr.mp4 120 8 --perfil psicoroom --hap --fundido 0 --nombre tema_pr_cromo
+bash conformar.sh render_pr.mp4 120 8 --rol intro --fundido 0 --perfil psicoroom --hap --nombre pr_cromo
 ```

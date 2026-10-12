@@ -8,6 +8,12 @@
 # Con --entero no recorta nada: estira o encoge la toma completa hasta que dure N compases
 # exactos. Es lo que necesitan las subidas y los coros, cuyo guion va compás a compás.
 #
+# Con --rol se dice para qué momento del set es el video y el script hace lo que toca:
+#   intro, groove, break   toma entera, empalme fundido de 1 tiempo (loops que se repiten)
+#   subida (o precoro)     toma entera, sin empalme: una sola pasada que acaba en el drop
+#   coro (o drop)          toma entera, corte seco: vuelve a su impacto cada N compases
+# y pone el rol delante del nombre (coro_sacro_128bpm_8c.mp4) para que el motor lo reconozca.
+#
 # Uso:
 #   bash conformar.sh ENTRADA BPM COMPASES [opciones]
 #
@@ -24,11 +30,12 @@
 #   --hap               además del MP4, un .mov en HAP Q para Resolume (si tu ffmpeg lo trae)
 #   --entero            usa la toma entera: la estira o la encoge a N compases, sin recortar ni fundir
 #   --luego TOMA        pega otra toma a continuación antes de conformar (se puede repetir)
+#   --rol ROL           intro, groove, break, subida (precoro) o coro (drop); ver arriba
 #
 # Ejemplos:
 #   bash conformar.sh humo.mov 128 8 --nombre break_humo
 #   → break_humo_128bpm_8c.mp4   (8 compases a 128 BPM = 15 s exactos, empalme invisible)
-#   bash conformar.sh toma1.mp4 128 8 --entero --luego toma2.mp4 --nombre subida_sacro
+#   bash conformar.sh toma1.mp4 128 8 --rol subida --luego toma2.mp4 --nombre sacro
 #   → subida_sacro_128bpm_8c.mp4 (las dos tomas de 8 s encajadas en 15 s; el motor la usa como Subida)
 #
 # Pensado para macOS (bash 3.2 + herramientas BSD); también funciona en Linux.
@@ -46,14 +53,22 @@ case "${1:-}" in -h|--help) ayuda; exit 0 ;; esac
 [ $# -ge 3 ] || { ayuda >&2; exit 2; }
 
 ENTRADA="$1"; BPM="$2"; COMPASES="$3"; shift 3
-DESDE=0; FUNDIDO=1; NOMBRE=""; SALIDA=""; TAM="1920x1080"; FPS=30; MBPS=""; HAP=0; ENTERO=0
+DESDE=0; FUNDIDO=1; FUNDIDO_DADO=0; NOMBRE=""; SALIDA=""; TAM="1920x1080"; FPS=30; MBPS=""; HAP=0; ENTERO=0; ROL=""
 TOMAS=("$ENTRADA")
 while [ $# -gt 0 ]; do
   case "$1" in
     --entero) ENTERO=1; shift ;;
+    --rol)
+      case "${2:-}" in
+        intro|groove|break|subida|coro) ROL="$2" ;;
+        precoro) ROL="subida" ;;
+        drop) ROL="coro" ;;
+        *) error "rol desconocido: ${2:-} (hay intro, groove, break, subida o precoro, coro o drop)" ;;
+      esac
+      shift 2 ;;
     --luego) [ -n "${2:-}" ] || error "--luego necesita el archivo de la toma"; TOMAS+=("$2"); shift 2 ;;
     --desde) DESDE="${2:-}"; shift 2 ;;
-    --fundido) FUNDIDO="${2:-}"; shift 2 ;;
+    --fundido) FUNDIDO="${2:-}"; FUNDIDO_DADO=1; shift 2 ;;
     --nombre) NOMBRE="${2:-}"; shift 2 ;;
     --salida) SALIDA="${2:-}"; shift 2 ;;
     --tam) TAM="${2:-}"; shift 2 ;;
@@ -92,8 +107,17 @@ printf '%s' "$TAM" | grep -Eq '^[0-9]+x[0-9]+$' || error "--tam tiene que ser AN
 [ "$(calc "$COMPASES >= 1")" = "1.000000" ] || error "como mínimo, 1 compás"
 ANCHO="${TAM%x*}"; ALTO="${TAM#*x}"
 
+# lo que decide el rol (un --fundido escrito a mano manda sobre él)
+if [ -n "$ROL" ]; then ENTERO=1; fi
+if [ "$FUNDIDO_DADO" = "0" ]; then
+  case "$ROL" in
+    intro|groove|break) FUNDIDO=1 ;;             # loops: el final se funde con el principio
+    subida|coro) FUNDIDO=0 ;;                     # una pasada, o un loop que vuelve a su impacto
+    *) if [ "$ENTERO" = "1" ]; then FUNDIDO=0; fi ;;
+  esac
+fi
+
 # tiempos de la rejilla
-[ "$ENTERO" = "1" ] && FUNDIDO=0                # una subida o un coro no se repite: no hay empalme que fundir
 LARGO=$(calc "$COMPASES * 240 / $BPM")          # duración del loop
 FUND=$(calc "$FUNDIDO * 60 / $BPM")             # duración del fundido del empalme
 NECESITA=$(calc "$LARGO + $FUND")
@@ -113,8 +137,9 @@ DISP=$(calc "$DUR - $DESDE")
 [ "$(calc "$DISP > 0.1")" = "1.000000" ] || error "--desde $DESDE queda fuera del video (dura $DUR s)"
 
 if [ "$ENTERO" = "1" ]; then
-  # la toma entera pasa a durar N compases: lo que el guion pone al 50 % cae a mitad de los compases
-  ESTIRA=$(calc "$LARGO / $DISP")
+  # la toma entera pasa a durar N compases (más el fundido, si lo hay): lo que el guion
+  # pone al 50 % cae a mitad de los compases
+  ESTIRA=$(calc "$NECESITA / $DISP")
 else
   # si el trozo disponible no alcanza, se estira (cámara lenta) hasta cubrir el loop y el fundido
   ESTIRA=$(calc "($NECESITA > $DISP) ? $NECESITA / $DISP : 1")
@@ -122,6 +147,14 @@ fi
 
 # nombre de salida: base_128bpm_8c.mp4 (el motor lee el BPM del nombre)
 if [ -z "$NOMBRE" ]; then NOMBRE=$(basename "$ENTRADA"); NOMBRE="${NOMBRE%.*}"; fi
+if [ -n "$ROL" ]; then
+  case "$ROL" in   # las mismas palabras con las que el motor reconoce cada sección
+    subida) PALABRAS_ROL='subida|build|riser|pre-?coro|pre-?chorus' ;;
+    coro) PALABRAS_ROL='coro|drop|chorus|estribillo' ;;
+    *) PALABRAS_ROL="$ROL" ;;
+  esac
+  printf '%s' "$NOMBRE" | grep -Eiq "$PALABRAS_ROL" || NOMBRE="${ROL}_${NOMBRE}"
+fi
 [ -n "$SALIDA" ] || SALIDA=$(dirname "$ENTRADA")
 mkdir -p "$SALIDA"
 BPM_TXT=$(awk "BEGIN{printf \"%g\", $BPM}")
@@ -156,10 +189,15 @@ fi
 if [ ${#TOMAS[@]} -gt 1 ]; then printf 'Entrada:  %s tomas seguidas (%.2f s en total)\n' "${#TOMAS[@]}" "$DUR"
 else printf 'Entrada:  %s (%.2f s)\n' "$ENTRADA" "$DUR"; fi
 printf '%s %s compases a %s BPM = %.3f s = %s cuadros a %s fps\n' "$([ "$ENTERO" = "1" ] && printf 'Entero:  ' || printf 'Loop:    ')" "$COMP_TXT" "$BPM_TXT" "$LARGO" "$CUADROS" "$FPS"
+case "$ROL" in
+  intro|groove|break) printf 'Rol:      %s · loop con empalme %s\n' "$ROL" "$([ "$(calc "$FUND > 0")" = "1.000000" ] && printf 'fundido' || printf 'seco')" ;;
+  subida) printf 'Rol:      subida · una pasada; en el motor se estira a la subida y acaba en el drop\n' ;;
+  coro) printf 'Rol:      coro · entra en el 1 del drop desde su primer cuadro y vuelve al impacto cada %s compases\n' "$COMP_TXT" ;;
+esac
 [ "$EXACTO" = "1" ] || printf 'Aviso:    a %s fps el loop no cae en un cuadro exacto (se redondea). Con 120 BPM o loops de 4 u 8 compases a 128 es exacto.\n' "$FPS"
 if [ "$ENTERO" = "1" ]; then
-  printf 'Encaje:   la toma de %.2f s pasa a %.2f s (×%.3f, %s)\n' "$DISP" "$LARGO" "$ESTIRA" "$([ "$(calc "$ESTIRA > 1")" = "1.000000" ] && printf 'más lenta' || printf 'más rápida')"
-  [ "$(calc "$ESTIRA > 1.6 || $ESTIRA < 0.6")" = "1.000000" ] && printf 'Aviso:    el cambio de velocidad es grande y se notará; mejor generar tomas que sumen cerca de %.1f s.\n' "$LARGO"
+  printf 'Encaje:   la toma de %.2f s pasa a %.2f s (×%.3f, %s)\n' "$DISP" "$NECESITA" "$ESTIRA" "$([ "$(calc "$ESTIRA > 1")" = "1.000000" ] && printf 'más lenta' || printf 'más rápida')"
+  [ "$(calc "$ESTIRA > 1.6 || $ESTIRA < 0.6")" = "1.000000" ] && printf 'Aviso:    el cambio de velocidad es grande y se notará; mejor generar tomas que sumen cerca de %.1f s.\n' "$NECESITA"
 else
   [ "$(calc "$ESTIRA > 1.0005")" = "1.000000" ] && printf 'Estirado: el trozo útil dura %.2f s; se ralentiza ×%.2f para cubrir el loop\n' "$DISP" "$ESTIRA"
 fi

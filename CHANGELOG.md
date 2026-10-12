@@ -4,6 +4,12 @@ Qué cambió en cada commit, de lo más nuevo a lo más viejo. Cada entrada llev
 
 ## 2026-10-12
 
+### Los cinco roles de un video y Remotion [sin publicar]
+- **Roles**: cada video se hace para un momento (intro, groove, break, subida o coro), que se decide en el guion, da forma al prompt y va en el nombre del archivo. Ficha de cada rol con su plantilla de prompt en [`roles.md`](visuales/fabrica/roles.md); los guiones del show tienen ya su rol.
+- `conformar.sh --rol`: toma entera, con o sin fundido según el rol, y el rol delante del nombre. `precoro` vale como `subida` y `drop` como `coro`.
+- Motor: reconoce `precoro` como subida y `coro`, `chorus` o `estribillo` como drop.
+- **Remotion** en [`visuales/fabrica/remotion/`](visuales/fabrica/remotion/): frases de impacto exactas al cuadro y al BPM (LA MÁQUINA, HOW DO YOU FEEL RIGHT NOW, PETER ROMO) con las tipografías del motor, strobe seguro y whiteout final; `npm run render` las deja nombradas por rol.
+
 ### Subidas y coros que encajan con la música [64a67ad]
 - Clips de tipo **Subida**: recorren la subida entera, a cualquier número de compases y BPM, y su último cuadro cae justo en el drop. Entran así los archivos con `subida`, `build` o `riser` en el nombre.
 - Al empezar una sección el clip entra desde su primer cuadro: el impacto del coro cae en el 1 del drop. `coro` y `chorus` en el nombre valen como `drop`.

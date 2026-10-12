@@ -432,7 +432,7 @@ body.soltando .escena{outline:2px dashed var(--live);outline-offset:4px}
           <input type="file" id="fileClips" accept="video/*,.mp4,.m4v,.mov,.webm" multiple hidden>
         </div>
         <p class="ayuda">También puedes arrastrar videos sobre la página. Formatos: MP4 (H.264) o WebM; HAP y DXV de Resolume no se reproducen en el navegador.</p>
-        <p class="ayuda"><b>Loop</b>: clip corto que rota por sección y corta al compás. Si el nombre incluye <b>intro</b>, <b>groove</b>, <b>break</b> o <b>drop</b> (o <b>coro</b>), se usa solo en esa sección. <b>Tema</b>: video largo hecho para una canción; se lanza en el 1 y suena entero. Los de más de 30 s, o con <b>tema</b> en el nombre, entran como tema. <b>Subida</b>: video hecho para la subida; la recorre entera, estirado o acelerado para que su último cuadro caiga justo en el drop. Entran así los que llevan <b>subida</b>, <b>build</b> o <b>riser</b> en el nombre.</p>
+        <p class="ayuda"><b>Loop</b>: clip corto que rota por sección y corta al compás. Si el nombre incluye <b>intro</b>, <b>groove</b>, <b>break</b> o <b>coro</b> (o <b>drop</b>), se usa solo en esa sección. <b>Tema</b>: video largo hecho para una canción; se lanza en el 1 y suena entero. Los de más de 30 s, o con <b>tema</b> en el nombre, entran como tema. <b>Subida</b>: video hecho para la subida; la recorre entera, estirado o acelerado para que su último cuadro caiga justo en el drop. Entran así los que llevan <b>subida</b>, <b>precoro</b>, <b>build</b> o <b>riser</b> en el nombre.</p>
         <p class="ayuda">Con <b>BPM</b> (escríbelo o ponlo en el nombre, como <code>_128bpm</code>) el clip queda amarrado a la sesión: si el tempo cambia, el video lo sigue y no se desfasa.</p>
         <div class="lista-clips" id="listaClips"></div>
         <label class="campo">Cambiar de clip cada
@@ -1157,9 +1157,10 @@ function patrones(beat){
    y «subida» (recorren la subida entera y llegan a su último cuadro justo en el drop).
    Un clip con BPM queda amarrado a la sesión: su velocidad sigue al tempo y su posición a la rejilla de compases. */
 const IDS=SECCIONES.map(s=>s[0]);
-const PALABRAS={intro:['intro'],groove:['groove','loop'],break:['break'],subida:['subida','build','riser'],drop:['drop','coro','chorus']};
+// el rol de cada video va en su nombre: intro, groove, break, subida (precoro) o coro (drop)
+const PALABRAS={intro:/intro/i,groove:/groove|loop/i,break:/break/i,subida:/subida|build|riser|pre-?coro|pre-?chorus/i,drop:/drop|(?<!pre-?)coro|(?<!pre-?)chorus|estribillo/i};
 const SIGUIENTE={intro:'groove',groove:'break',break:'subida',subida:'drop',drop:'groove'};
-const ES_TEMA=/tema|canci[oó]n|song/i,ES_SUBIDA=/subida|build|riser/i;
+const ES_TEMA=/tema|canci[oó]n|song/i,ES_SUBIDA=PALABRAS.subida;
 const clips={lista:[],actual:null,entrante:null,prep:{},rot:{},sig:1,tema:null,temaPend:null,ultimoTema:null,
   subida:null,subidaPrep:null,rotSubida:0,canvas:document.createElement('canvas')};
 clips.ctx=clips.canvas.getContext('2d');
@@ -1169,7 +1170,7 @@ const esVideo=f=>/^video\//.test(f.type)||/\.(mp4|m4v|mov|webm|ogv)$/i.test(f.na
 const compasDe=c=>240/c.bpm;   // un compás del clip, en segundos
 const minSeg=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
 function bpmDelNombre(n){const m=n.match(/(\d{2,3}(?:[.,]\d+)?)\s*-?\s*bpm/i);if(!m)return null;const b=parseFloat(m[1].replace(',','.'));return b>=60&&b<=200?b:null;}
-function seccionesPorNombre(n){const s=n.toLowerCase(),r=IDS.filter(id=>PALABRAS[id].some(p=>s.includes(p)));return new Set(r.length?r:IDS);}
+function seccionesPorNombre(n){const s=n.toLowerCase(),r=IDS.filter(id=>PALABRAS[id].test(s));return new Set(r.length?r:IDS);}
 function recordarClip(c){memClips[c.nombre]={bpm:c.bpm,tipo:c.tipo,secciones:[...c.secciones],logo:c.logoFijo?c.logo:undefined};guardado.escribir('clips',memClips);}
 // temas y subidas son tus videos grandes: por defecto el logo se aparta; sobre los loops (el relleno) va encima
 function fijarTipo(c,t){c.tipo=t;c.video.loop=t==='loop';if(!c.logoFijo)c.logo=t==='loop'?'encima':'oculto';}

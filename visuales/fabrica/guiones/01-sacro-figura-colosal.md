@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| Archivo final | `sacro_figura_100bpm_8c.mp4` |
+| Rol | **Intro**: la figura aparece de la oscuridad |
+| Archivo final | `intro_sacro_figura_100bpm_8c.mp4` |
 | BPM de producción | 100 (momentos pop y vocales) |
 | Compases | 8 (a 100 BPM = 19,2 s) |
-| Tipo | Loop |
-| Sección / mood | Intro, break y groove · **Sacro** |
+| Mood | **Sacro** |
 | Formato | 2048 × 1024, 60 fps, sin audio |
 | Paleta | Fondo `#000000` · oro de vela `#d4a24c` · blanco cálido `#fff0d0` |
 | Ruta | IA generativa (imagen a video) |
@@ -40,10 +40,10 @@ ultra wide 2:1 composition, subject centered
 
 Evitar: rostro visible, personajes reconocibles de películas, texto, cielos o fondos claros, colores saturados.
 
-Las tomas de IA duran 5–10 s: genera dos y únelas o pide una de 10 s y deja que el conformador la estire (×2).
+Las tomas de IA duran 5–10 s: genera dos de 8–10 s (la segunda desde el último fotograma de la primera) y pégalas con `--luego`.
 
 ## Conformar
 
 ```bash
-bash conformar.sh toma_sacro.mp4 100 8 --perfil psicoroom --hap --nombre sacro_figura
+bash conformar.sh toma1.mp4 100 8 --rol intro --luego toma2.mp4 --perfil psicoroom --hap --nombre sacro_figura
 ```

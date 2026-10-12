@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| Archivo final | `seccion_nombre_120bpm_8c.mp4` |
+| Rol | **Intro**, **Groove**, **Break**, **Subida** (precoro) o **Coro** (drop): uno solo, ver [`../roles.md`](../roles.md) |
+| Archivo final | `rol_nombre_120bpm_8c.mp4` |
 | BPM de producción | 120 (el motor lo ajusta al BPM real de la sesión) |
 | Compases | 8 (a 120 BPM = 16 s) |
-| Tipo | Loop (rota por sección), Tema (se lanza en el 1 y suena entero) o Subida (recorre la subida y acaba en el drop) |
-| Sección / mood | Groove · Escenario |
+| Mood | Escenario |
 | Formato | 2048 × 1024, 60 fps, sin audio |
 | Paleta | Fondo `#000000` · base · tensión · acento |
 | Ruta | IA generativa / 3D por script / motor / grabación |
@@ -30,7 +30,7 @@ Plano, cámara, sujeto, luz, textura. Dónde está el negro (la pantalla no pued
 
 ## Prompt (video con IA)
 
-En inglés (los generadores lo entienden mejor), con un bloque de 2 s por compás. Detalles en [`../subida-y-coro.md`](../subida-y-coro.md).
+En inglés (los generadores lo entienden mejor), con un bloque de 2 s por compás y la forma de su rol (intro: aparecer; groove: moverse sin llegar; break: respirar; subida: acelerar hacia la luz; coro: golpear y sostener). Plantillas en [`../roles.md`](../roles.md).
 
 ```
 Descripción general del plano, la luz y el fondo negro.
@@ -45,7 +45,6 @@ Evitar: texto incrustado, logos ajenos, fondos claros, cortes de cámara bruscos
 ## Conformar
 
 ```bash
-bash conformar.sh toma.mp4 120 8 --perfil psicoroom --hap --nombre seccion_nombre
-# subida o coro: la toma entera encajada en los compases, y la segunda toma a continuación
-bash conformar.sh toma1.mp4 120 8 --entero --luego toma2.mp4 --perfil psicoroom --nombre seccion_subida
+bash conformar.sh toma1.mp4 120 8 --rol ROL --luego toma2.mp4 --perfil psicoroom --hap --nombre nombre
+# → rol_nombre_120bpm_8c.mp4
 ```

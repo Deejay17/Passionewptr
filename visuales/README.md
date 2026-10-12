@@ -134,7 +134,7 @@ for f in *.mov; do ffmpeg -i "$f" -c:v libx264 -crf 18 -pix_fmt yuv420p -an "${f
 
 ## Cómo producir los videos para que vayan sincronizados
 
-La guía completa, el script `conformar.sh` y los guiones del show están en [`fabrica/`](fabrica/README.md).
+La guía completa, el script `conformar.sh` y los guiones del show están en [`fabrica/`](fabrica/README.md). Cada video se hace para un rol (intro, groove, break, subida o coro) que va en su nombre y el motor lo coloca solo: [`fabrica/roles.md`](fabrica/roles.md).
 
 - **Elige un BPM de producción** y ponlo en el nombre: `tema_nombre_128bpm.mp4`. El motor ajusta la velocidad al BPM real de la sesión.
 - **Que dure compases enteros**: a 128 BPM, 1 compás = 1,875 s y **1 minuto = 32 compases exactos**. A 120 BPM, 1 compás = 2 s.
