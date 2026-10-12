@@ -1,6 +1,6 @@
 # Motor Visual PR
 
-Motor de visuales en vivo para sets DJ, hecho a medida del logo **PR**. Funciona sin instalar nada y sin internet: es un único archivo, `motor-visual-pr.html`, que se abre en Chrome.
+Motor de visuales en vivo para sets DJ, hecho a medida del logo **PR**. Es la pieza visual de [PRotocolive](../PROTOCOLIVE.md). Funciona sin instalar nada y sin internet: es un único archivo, `motor-visual-pr.html`, que se abre en Chrome.
 
 La idea es que la narrativa del set ya venga programada, en lugar de montarla clip a clip como en Resolume:
 

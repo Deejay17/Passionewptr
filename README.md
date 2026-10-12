@@ -1,12 +1,13 @@
 # Passionewptr
 
-Herramientas de Peter Romo para sus shows: un motor de visuales en vivo hecho a medida (en lugar de Resolume), la fábrica para producir los clips que lo alimentan y un script de arranque para otro proyecto.
+Software de **[PRotocolive](PROTOCOLIVE.md)**, el sistema operativo de escenario de Peter Romo: un motor de visuales en vivo hecho a medida (en lugar de Resolume) y la fábrica para producir los clips que lo alimentan. Además guarda un script de arranque para otro proyecto.
 
 | Carpeta | Qué hay | Documentación |
 |---|---|---|
+| [`PROTOCOLIVE.md`](PROTOCOLIVE.md) | Los cuatro módulos de PRotocolive, qué hay hecho de cada uno y en qué orden seguir | — |
 | [`visuales/`](visuales/) | **Motor Visual PR**: visuales en vivo sincronizados con el set (logo PR que late con el kick, moods, clips y temas amarrados al BPM, frases de impacto, pantalla 2:1) | [`visuales/README.md`](visuales/README.md) |
 | [`visuales/fabrica/`](visuales/fabrica/) | **Fábrica de loops**: guiones de clips y `conformar.sh`, que deja cualquier video en N compases exactos de un BPM | [`visuales/fabrica/README.md`](visuales/fabrica/README.md) |
-| [`scripts/`](scripts/) | `bootstrap_pasion_quito.sh`: extrae, sanea y publica en un repositorio privado de GitHub el código de "Pasión Quito" | Comentarios al principio del script |
+| [`scripts/`](scripts/) | Fuera de PRotocolive. `bootstrap_pasion_quito.sh`: extrae, sanea y publica en un repositorio privado de GitHub el código de "Pasión Quito" | Comentarios al principio del script |
 
 ## Empezar en 1 minuto
 

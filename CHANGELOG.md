@@ -4,6 +4,10 @@ Qué cambió en cada commit, de lo más nuevo a lo más viejo. Cada entrada llev
 
 ## 2026-10-12
 
+### El proyecto pasa a ser parte de PRotocolive [sin publicar]
+- `PROTOCOLIVE.md`: los cuatro módulos de PRotocolive (Screen Mapper, Briefing Exprés, Cue Sheet y Playbook de momentos), qué hace ya el motor en cada uno, qué falta y en qué orden seguir.
+- Los README presentan el motor y la fábrica como software de PRotocolive.
+
 ### Documentación y pantalla completa de la interfaz [7d43b59]
 - **Pantalla completa de toda la interfaz** (botón arriba a la derecha o `Mayús` + `Enter`): la mesa de control ocupa la pantalla, el monitor crece y los ajustes se desplazan en su columna. `Enter` sigue poniendo a pantalla completa solo la salida.
 - README en la raíz del repositorio y este registro de cambios.
