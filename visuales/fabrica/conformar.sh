@@ -16,7 +16,8 @@
 #
 # Con --marcas se le dice en qué segundo cae cada golpe (lo que se marca en «Golpes» del motor,
 # que da la línea ya escrita): el video se estira o se encoge tramo a tramo para que cada golpe
-# caiga en su sitio al BPM pedido, y empieza en el golpe 1 (lo de antes, los previos, se quita).
+# caiga en su sitio al BPM pedido, y empieza en el golpe 1, el momentum (lo de antes, los previos,
+# se quita). Los previos se numeran hacia atrás: -1 es el tiempo justo antes del momentum, -8 ocho antes.
 #
 # Uso:
 #   bash conformar.sh ENTRADA BPM COMPASES [opciones]
@@ -35,7 +36,7 @@
 #   --entero            usa la toma entera: la estira o la encoge a N compases, sin recortar ni fundir
 #   --luego TOMA        pega otra toma a continuación antes de conformar (se puede repetir)
 #   --rol ROL           intro, groove, break, subida (precoro) o coro (drop); ver arriba
-#   --marcas T:G,T:G    en el segundo T del video cae el golpe G (1 = el golpe 1); ver arriba
+#   --marcas T:G,T:G    en el segundo T del video cae el golpe G (1 = el momentum, -8 = 8 antes); ver arriba
 #
 # Ejemplos:
 #   bash conformar.sh humo.mov 128 8 --nombre break_humo
@@ -154,9 +155,9 @@ if [ -n "$MARCAS" ]; then
   # golpe G en el segundo T → en la salida, el golpe G cae en (G − 1) × 60 / BPM. Entre marcas, una recta;
   # antes de la primera y después de la última, el ritmo del tramo más cercano. Lo negativo (previos) se quita.
   INFO=$(printf '%s' "$MARCAS" | tr ',' '\n' | awk -F: -v spb="$(calc "60 / $BPM")" -v dur="$DUR" '
-    { t[NR]=$1; b[NR]=$2-1 }
+    { if ($2==0) cero=1; t[NR]=$1; b[NR]=($2>0)?$2-1:$2 }
     END {
-      n=NR
+      n=NR; if (cero) { print "CERO"; exit }
       for (i=1; i<=n; i++) for (j=i+1; j<=n; j++) if (b[j]<b[i]) { x=b[i]; b[i]=b[j]; b[j]=x; x=t[i]; t[i]=t[j]; t[j]=x }
       for (i=1; i<n; i++) if (b[i+1]==b[i] || t[i+1]<=t[i]) { print "ERROR"; exit }
       if (n==1) { if (b[1]!=0) { print "UNA"; exit } printf "DESDE %.6f\n", t[1]; exit }
@@ -173,6 +174,7 @@ if [ -n "$MARCAS" ]; then
     }')
   case "$INFO" in
     ERROR) error "las marcas no van en orden: cada golpe tiene que caer después del anterior" ;;
+    CERO) error "no hay golpe 0: el de justo antes del golpe 1 (el momentum) es el -1" ;;
     UNA) error "con una sola marca, que sea la del golpe 1 (por ejemplo 0.62:1)" ;;
     DESDE*) DESDE=$(printf '%s' "$INFO" | awk '{print $2}'); DISP=$(calc "$DUR - $DESDE"); MARCAS="" ;;
     *)

@@ -4,6 +4,12 @@ Qué cambió en cada commit, de lo más nuevo a lo más viejo. Cada entrada llev
 
 ## 2026-10-12
 
+### El momentum y sus previos [sin publicar]
+- El golpe 1 de un video es su **momentum**: el instante que tiene que caer en el 1 de la música. Los previos se cuentan hacia atrás (−1, −2… −8) y ya no existe el golpe 0; las marcas que ya tenías conservan el número que veías.
+- El clip del drop con previos arranca durante la subida, tantos tiempos antes como tenga, para que su momentum caiga justo en el drop (con drop automático).
+- Un tema con previos lanzado durante la subida pone su momentum en el drop.
+- `conformar.sh --marcas` usa la misma cuenta (`0:-8,4:1`).
+
 ### Golpes: el warp de los videos [574418b]
 - Botón **Golpes** en cada clip: se marca en qué cuadro cae el golpe 1 (el que abre la secuencia) y los golpes que se quiera, cuadro a cuadro y sobre una línea de tiempo con la rejilla del video. Con dos marcas el motor calcula el BPM del video; con más, estira o encoge cada tramo para que todos los golpes caigan en los de la música. **Reproducir con clic** lo deja comprobar de oído.
 - Los loops entran en su sección por el golpe 1, los temas hacen sonar sus **previos** antes del 1 y las subidas llevan el golpe 1 al principio y la última marca al drop.

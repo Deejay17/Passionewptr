@@ -39,7 +39,7 @@ bash conformar.sh humo_monja.mp4 128 8 --perfil psicoroom --hap --nombre sacro_m
 - **`--entero`**: no recorta nada; estira o encoge la toma completa hasta los compases exactos, para que cada bloque del guion caiga en su compás. Es el modo de las subidas y los coros.
 - **`--luego TOMA`**: pega otra toma a continuación (se puede repetir). Así una subida de 8 compases sale de dos tomas de 8 s.
 - **`--rol intro|groove|break|subida|coro`**: hace lo que toca para cada rol (toma entera, con o sin fundido) y pone el rol delante del nombre.
-- **`--marcas 0.62:1,4.40:9`**: en el segundo 0,62 cae el golpe 1 y en el 4,40 el golpe 9. El video se estira o se encoge tramo a tramo para que cada golpe caiga en su sitio y empieza en el golpe 1. Las marcas se ponen viendo el video en **Golpes** del motor, que da la línea ya escrita.
+- **`--marcas 0.62:1,4.40:9`**: en el segundo 0,62 cae el golpe 1 (el momentum) y en el 4,40 el golpe 9; los previos van en negativo (`0:-8` = ocho tiempos antes del momentum). El video se estira o se encoge tramo a tramo para que cada golpe caiga en su sitio y empieza en el momentum. Las marcas se ponen viendo el video en **Golpes** del motor, que da la línea ya escrita.
 - El empalme funde el final con el principio durante 1 tiempo (`--fundido`). En las pruebas, el salto en el empalme quedó igual que entre dos cuadros normales; con un corte seco era 79 veces mayor.
 - A 60 fps, los loops de 4 u 8 compases a 128 BPM o cualquier número de compases a 120 BPM caen en cuadros exactos.
 - **DXV3**: ffmpeg no lo genera. Pasa el MP4 por **Resolume Alley** (gratis, viene con Resolume). HAP Q, que también va fino en Resolume, sí sale directo con `--hap`.

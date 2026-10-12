@@ -114,10 +114,10 @@ Para lanzarlo en el momento justo:
 
 ### Marcar los golpes de un video (el warp)
 
-Un video hecho con IA casi nunca tiene su primer golpe en el primer cuadro, ni sus golpes a un tempo exacto. Con el botón **Golpes** de cada clip se le dice dónde caen, como la rejilla de Traktor o los marcadores de warp de Ableton:
+Un video hecho con IA casi nunca tiene su golpe importante en el primer cuadro, ni sus golpes a un tempo exacto. Con el botón **Golpes** de cada clip se le dice dónde caen, como la rejilla de Traktor o los marcadores de warp de Ableton:
 
-1. Busca el cuadro del primer golpe fuerte (clic en la línea de tiempo y `←` `→` cuadro a cuadro) y pulsa **Aquí cae el golpe 1**. Es el que abre la secuencia: lo que va antes son los **previos**.
-2. Ve a otro golpe claro más adelante, escribe su número (el 9 es el 1 del compás 3; al lado se ve en compás y tiempo) y pulsa **Marcar este golpe**. Con dos marcas el motor ya sabe a qué tempo va el video y pone su BPM solo.
+1. Busca el **momentum**: el cuadro que tiene que caer en el 1 de la música (el impacto, la entrada del coro). Clic en la línea de tiempo, `←` `→` cuadro a cuadro, y pulsa **Aquí está el momentum (golpe 1)**. Lo que va antes son los **previos**.
+2. Marca otro golpe claro, escribe su número y pulsa **Marcar este golpe**. Después del momentum se cuenta 2, 3, 4… (el 9 es el 1 del compás 3); antes, hacia atrás: −1 es el tiempo justo antes y −8, ocho tiempos antes. No hay golpe 0. Al lado del número se ve en compás y tiempo. Con dos marcas el motor ya sabe a qué tempo va el video y pone su BPM solo.
 3. Si el video acelera o frena, marca más golpes: entre cada dos marcas el motor estira o encoge ese tramo para que todos caigan en los golpes de la música.
 4. **Reproducir con clic** suena un clic en cada golpe del video (más agudo en el 1 de cada compás) para comprobar que encaja.
 
@@ -125,11 +125,12 @@ Qué hace el motor con las marcas:
 
 | Tipo | Con marcas |
 |---|---|
-| Loop | Al empezar su sección entra en el golpe 1 (el impacto del coro cae en el 1) y repite los compases enteros que hay desde ahí |
-| Tema | El golpe 1 cae en el 1 que marcaste o en el próximo, y los previos suenan antes, de modo que la entrada se oye completa |
-| Subida | El golpe 1 cae al empezar la subida y la última marca, justo en el drop |
+| Loop | Al empezar su sección entra en el momentum y repite los compases enteros que hay desde ahí |
+| Loop del drop (coro) con previos | Con drop automático, arranca sus previos durante la subida, tantos tiempos antes como tenga (8 previos, 8 tiempos antes), y el momentum cae justo en el drop. En esos últimos tiempos el coro sustituye a lo que hubiera en la subida |
+| Tema | El momentum cae en el 1 que marcaste o en el próximo, y los previos suenan antes, de modo que la entrada se oye completa. Lanzado durante la subida, el momentum cae en el drop |
+| Subida | El momentum cae al empezar la subida y la última marca, justo en el drop |
 
-En las pruebas, un video con tres marcas a tempos distintos se mantuvo a 4 ms de media de su sitio, y un tema con 3 tiempos de previos arrancó 3 tiempos antes del 1 y llegó al 1 en su cuadro. Las marcas se recuerdan por nombre de archivo. El editor da además la línea de `conformar.sh --marcas` para que el archivo ya salga con ese warp (para Resolume o de respaldo).
+En las pruebas, un video con tres marcas a tempos distintos se mantuvo a 4 ms de media de su sitio; un coro con 8 tiempos de previos entró 8 tiempos antes del drop y su momentum cayó en el drop con 10–30 ms de diferencia, y un tema con previos llegó al 1 en su cuadro. Si el blackout del último tiempo de la subida tapa el final de los previos, se apaga en *Narrativa*. Las marcas se recuerdan por nombre de archivo. El editor da además la línea de `conformar.sh --marcas` para que el archivo ya salga con ese warp (para Resolume o de respaldo).
 
 ### El logo sobre los videos
 
