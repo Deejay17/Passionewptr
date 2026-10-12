@@ -13,7 +13,7 @@ guion (rol)  →  prompt con la forma del rol  →  conformar.sh --rol  →  rol
 | **Intro** | Los primeros compases | Loop. Entra desde su primer cuadro y el logo se dibuja encima durante 4 compases | 4–8 compases | Empieza casi en negro y algo aparece. Termina como empezó, para empalmar |
 | **Groove** | El cuerpo del tema, energía estable | Loop que se turna con los otros grooves cada 4, 8 o 16 compases | 4 compases | Movimiento constante, sin clímax: cualquier compás vale como entrada |
 | **Break** (break coreable) | Se va el bajo, queda la voz | Loop lento; el motor baja la energía y deja sitio a la letra | 4–8 compases | Casi quieto, mucho negro, una sola luz. **El centro, vacío** para la frase |
-| **Subida** (precoro, build-up) | La tensión hacia el coro | Una sola pasada: se estira a lo que dure la subida y su último cuadro cae en el drop | Lo mismo que la subida (8) | Empieza en calma, acelera y termina **saturando a blanco** o fundiendo a negro |
+| **Subida** (precoro, build-up) | La tensión hacia el coro | Una sola pasada: se estira a lo que dure la subida y su momentum (el blanco final) cae en el drop | Lo mismo que la subida (8) | Empieza en calma, acelera y termina **saturando a blanco** o fundiendo a negro |
 | **Coro** (drop físico) | La explosión | Loop que entra en el 1 del drop **desde su primer cuadro**, con flash o whiteout | 8 compases (o 4) | El compás 1 es el **impacto**; los demás sostienen la energía y vuelve al impacto cada 8 |
 
 Aparte están los **temas**: un video para una canción entera, de principio a fin. No es un rol; se lanza con `L` en el 1 de la canción.
@@ -27,7 +27,7 @@ Aparte están los **temas**: un video para una canción entera, de principio a f
 
 ## El prompt de cada rol
 
-Primero una línea con el plano, el sujeto, la luz y el fondo negro; después los bloques.
+Primero la [base de prompt](base-de-prompt.md) (el testigo del ritmo y la luz del momentum), luego una línea con el plano, el sujeto y la luz, y después los bloques.
 
 **Intro**: aparecer.
 
@@ -91,7 +91,7 @@ bash conformar.sh coro1.mp4 128 8 --rol coro --luego coro2.mp4 --perfil psicoroo
 
 ## Si el golpe no cae donde debía
 
-Un generador nunca clava el tiempo: el impacto del coro puede caer en el segundo 0,6 y no en el 0. No hace falta regenerar: en el motor, **Golpes** marca en qué cuadro cae el golpe 1 y los demás, y el clip se ajusta solo (detalles en el [README del motor](../README.md#marcar-los-golpes-de-un-video-el-warp)). Para que el archivo ya salga corregido, la misma información va a `conformar.sh --marcas`.
+Un generador nunca clava el tiempo: el impacto del coro puede caer en el segundo 0,6 y no en el 0. No hace falta regenerar: en el motor, **Golpes** marca en qué cuadro cae el momentum y los demás golpes (o los encuentra solo con **Detectar por la luz**, si el prompt llevaba la base), y el clip se ajusta solo (detalles en el [README del motor](../README.md#marcar-los-golpes-de-un-video-el-warp)). Para que el archivo ya salga corregido, la misma información va a `conformar.sh --marcas`.
 
 ## En el motor
 

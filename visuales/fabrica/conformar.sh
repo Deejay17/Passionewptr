@@ -37,6 +37,8 @@
 #   --luego TOMA        pega otra toma a continuación antes de conformar (se puede repetir)
 #   --rol ROL           intro, groove, break, subida (precoro) o coro (drop); ver arriba
 #   --marcas T:G,T:G    en el segundo T del video cae el golpe G (1 = el momentum, -8 = 8 antes); ver arriba
+#   --tapar ESQUINA     tapa con negro el testigo del ritmo (el puntito que destella en cada tiempo):
+#                       si (arriba izq.), sd (arriba der.), ii (abajo izq.) o id (abajo der.)
 #
 # Ejemplos:
 #   bash conformar.sh humo.mov 128 8 --nombre break_humo
@@ -61,7 +63,7 @@ case "${1:-}" in -h|--help) ayuda; exit 0 ;; esac
 [ $# -ge 3 ] || { ayuda >&2; exit 2; }
 
 ENTRADA="$1"; BPM="$2"; COMPASES="$3"; shift 3
-DESDE=0; DESDE_DADO=0; MARCAS=""; FUNDIDO=1; FUNDIDO_DADO=0; NOMBRE=""; SALIDA=""; TAM="1920x1080"; FPS=30; MBPS=""; HAP=0; ENTERO=0; ROL=""
+DESDE=0; DESDE_DADO=0; MARCAS=""; TAPAR=""; FUNDIDO=1; FUNDIDO_DADO=0; NOMBRE=""; SALIDA=""; TAM="1920x1080"; FPS=30; MBPS=""; HAP=0; ENTERO=0; ROL=""
 TOMAS=("$ENTRADA")
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -77,6 +79,9 @@ while [ $# -gt 0 ]; do
     --luego) [ -n "${2:-}" ] || error "--luego necesita el archivo de la toma"; TOMAS+=("$2"); shift 2 ;;
     --desde) DESDE="${2:-}"; DESDE_DADO=1; shift 2 ;;
     --marcas) MARCAS="${2:-}"; shift 2 ;;
+    --tapar)
+      case "${2:-}" in si|sd|ii|id) TAPAR="$2" ;; *) error "--tapar va con si, sd, ii o id (la esquina del testigo)" ;; esac
+      shift 2 ;;
     --fundido) FUNDIDO="${2:-}"; FUNDIDO_DADO=1; shift 2 ;;
     --nombre) NOMBRE="${2:-}"; shift 2 ;;
     --salida) SALIDA="${2:-}"; shift 2 ;;
@@ -220,18 +225,26 @@ DESTINO="$SALIDA/${NOMBRE}_${BPM_TXT}bpm_${COMP_TXT}c.mp4"
 # al estirar, los cuadros intermedios se interpolan (si no, la cámara lenta repite cuadros y va a saltos)
 if [ "$(calc "$ESTIRA > 1.0005")" = "1.000000" ]; then RITMO="minterpolate=fps=$FPS:mi_mode=blend"; else RITMO="fps=$FPS"; fi
 ENCUADRE="scale=$ANCHO:$ALTO:force_original_aspect_ratio=increase,crop=$ANCHO:$ALTO,setsar=1"
+# el testigo se tapa en el video original, antes de recortarlo: la misma caja que tapa el motor (10 % × 14 %)
+TAPA=""
+case "$TAPAR" in
+  si) TAPA="drawbox=x=0:y=0:w=iw*0.1:h=ih*0.14:color=black:t=fill," ;;
+  sd) TAPA="drawbox=x=iw*0.9:y=0:w=iw*0.1:h=ih*0.14:color=black:t=fill," ;;
+  ii) TAPA="drawbox=x=0:y=ih*0.86:w=iw*0.1:h=ih*0.14:color=black:t=fill," ;;
+  id) TAPA="drawbox=x=iw*0.9:y=ih*0.86:w=iw*0.1:h=ih*0.14:color=black:t=fill," ;;
+esac
 ORIGEN="[0:v]"; PREVIO=""
 if [ ${#TOMAS[@]} -gt 1 ]; then
   # varias tomas: se igualan de tamaño y se pegan una detrás de otra antes de conformar
   ETIQ=""
-  for i in "${!TOMAS[@]}"; do PREVIO="$PREVIO[$i:v]$ENCUADRE,format=yuv420p,settb=AVTB,setpts=PTS-STARTPTS[t$i];"; ETIQ="$ETIQ[t$i]"; done
+  for i in "${!TOMAS[@]}"; do PREVIO="$PREVIO[$i:v]$TAPA$ENCUADRE,format=yuv420p,settb=AVTB,setpts=PTS-STARTPTS[t$i];"; ETIQ="$ETIQ[t$i]"; done
   PREVIO="$PREVIO${ETIQ}concat=n=${#TOMAS[@]}:v=1:a=0[unidas];"
-  ORIGEN="[unidas]"
+  ORIGEN="[unidas]"; TAPA=""
 fi
 if [ -n "$WARP" ]; then
-  BASE="$PREVIO${ORIGEN}setpts='($WARP)/TB',trim=start=0,$RITMO,$ENCUADRE"
+  BASE="$PREVIO${ORIGEN}${TAPA}setpts='($WARP)/TB',trim=start=0,$RITMO,$ENCUADRE"
 else
-  BASE="$PREVIO${ORIGEN}trim=start=$DESDE,setpts=(PTS-STARTPTS)*$ESTIRA,$RITMO,$ENCUADRE"
+  BASE="$PREVIO${ORIGEN}${TAPA}trim=start=$DESDE,setpts=(PTS-STARTPTS)*$ESTIRA,$RITMO,$ENCUADRE"
 fi
 if [ "$(calc "$FUND > 0")" = "1.000000" ]; then
   # el primer tramo del loop es una mezcla: empieza siendo lo que viene justo después del final

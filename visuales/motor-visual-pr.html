@@ -564,6 +564,11 @@ body.soltando .escena{outline:2px dashed var(--live);outline-offset:4px}
       <button class="btn" type="button" id="golpesMarcar">Marcar este golpe</button>
       <span class="ayuda" id="golpesNumInfo"></span>
     </div>
+    <div class="fila">
+      <button class="btn chico" type="button" id="golpesDetectar" title="Busca el golpe de luz del momentum y, si el video tiene un puntito que destella en cada tiempo, todos los golpes">Detectar por la luz</button>
+      <label class="clip-bpm">Tempo <select id="golpesModo" class="clip-logo"><option value="fijo">Fijo: una sola velocidad</option><option value="warp">Warp: tramo a tramo</option></select></label>
+      <label class="clip-bpm">Testigo <select id="golpesTestigo" class="clip-logo"><option value="">ninguno</option><option value="si">↖ arriba a la izquierda</option><option value="sd">↗ arriba a la derecha</option><option value="ii">↙ abajo a la izquierda</option><option value="id">↘ abajo a la derecha</option></select></label>
+    </div>
     <ol class="rej-marcas" id="golpesMarcas"></ol>
     <p class="ayuda" id="golpesResumen"></p>
     <p class="ayuda" id="golpesConformar" hidden>Para que el archivo ya salga con este warp (Resolume o respaldo): <code id="golpesComando"></code></p>
@@ -975,6 +980,13 @@ function dibujarLogo(ctx,W,H,o){
   const X=u=>ox+(u-cx)*s,Y=v=>oy+(v-cy)*s,r=azar(o.semilla);
   o.cromo=o.acabado==='cromo'?gradCromo(ctx,ox,oy,c.h*s*0.7,o):null;
   ctx.lineCap='round';
+  // como en el logo: las ondas del kick van detrás y la P y la R por encima
+  const pOnda=clamp((o.prog-0.55)/0.45)*o.ondaProg;
+  if(pOnda>0){
+    ctx.beginPath();
+    for(const w of LOGO.ondas)trazarOnda(ctx,X(w.x),Y(w.y),s,s,pOnda,1,o.ondaGan);
+    trazo(ctx,o,Math.max(0.8,0.7*s),0.85);
+  }
   ctx.beginPath();
   LOGO.trazos.forEach((tr,j)=>{
     const p=clamp(o.prog*1.6-j*0.09);if(p<=0)return;
@@ -990,12 +1002,6 @@ function dibujarLogo(ctx,W,H,o){
     }
   });
   trazo(ctx,o,Math.max(1,1.55*s*(1+0.35*o.kick)),1);
-  const pOnda=clamp((o.prog-0.55)/0.45)*o.ondaProg;
-  if(pOnda>0){
-    ctx.beginPath();
-    for(const w of LOGO.ondas)trazarOnda(ctx,X(w.x),Y(w.y),s,s,pOnda,1,o.ondaGan);
-    trazo(ctx,o,Math.max(0.8,0.7*s),0.85);
-  }
 }
 
 /* logo desde un SVG: cualquier vector (el oficial cuando llegue). Solo se lee la geometría; nada del archivo se ejecuta. */
@@ -1202,6 +1208,7 @@ function patrones(beat){
    y «subida» (recorren la subida entera y llegan a su último cuadro justo en el drop).
    Un clip con BPM queda amarrado a la sesión: su velocidad sigue al tempo y su posición a la rejilla de compases. */
 const IDS=SECCIONES.map(s=>s[0]);
+const ESQUINAS={si:[0,0],sd:[1,0],ii:[0,1],id:[1,1]},TESTIGO_W=0.1,TESTIGO_H=0.14;   // la caja de la esquina del testigo del ritmo
 // el rol de cada video va en su nombre: intro, groove, break, subida (precoro) o coro (drop)
 const PALABRAS={intro:/intro/i,groove:/groove|loop/i,break:/break/i,subida:/subida|build|riser|pre-?coro|pre-?chorus/i,drop:/drop|(?<!pre-?)coro|(?<!pre-?)chorus|estribillo/i};
 const SIGUIENTE={intro:'groove',groove:'break',break:'subida',subida:'drop',drop:'groove'};
@@ -1216,7 +1223,8 @@ const minSeg=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
 function bpmDelNombre(n){const m=n.match(/(\d{2,3}(?:[.,]\d+)?)\s*-?\s*bpm/i);if(!m)return null;const b=parseFloat(m[1].replace(',','.'));return b>=60&&b<=200?b:null;}
 function seccionesPorNombre(n){const s=n.toLowerCase(),r=IDS.filter(id=>PALABRAS[id].test(s));return new Set(r.length?r:IDS);}
 function recordarClip(c){memClips[c.nombre]={bpm:c.bpm,tipo:c.tipo,secciones:[...c.secciones],logo:c.logoFijo?c.logo:undefined,
-  golpes:c.marcas.length?c.marcas.map(x=>({t:x.t,n:nGolpe(x.b)})):undefined,fps:c.fps!==30?c.fps:undefined};guardado.escribir('clips',memClips);}
+  golpes:c.marcas.length?c.marcas.map(x=>({t:x.t,n:nGolpe(x.b)})):undefined,fps:c.fps!==30?c.fps:undefined,
+  modo:c.modo==='warp'?'warp':undefined,testigo:c.testigo||undefined};guardado.escribir('clips',memClips);}
 const bDeN=n=>n>0?n-1:n;   // del número que se ve (1, 2… o −1, −2…) al golpe interno
 // marcas guardadas: «golpes» con el número que se ve; las primeras versiones guardaban «marcas» con otra cuenta
 // para los previos (el 0 era el de antes del 1): se conserva el número que se veía
@@ -1231,9 +1239,24 @@ function leerMarcas(m){
    b cuenta los golpes desde el golpe 1 (b = 0), el que abre la secuencia: lo de antes son previos (b negativo).
    Entre dos marcas el video se estira o se encoge para que sus golpes caigan en los de la música; fuera de
    ellas sigue el ritmo del tramo más cercano. Sin marcas, el golpe 1 es el primer cuadro y manda el BPM. */
-const marcasDe=c=>c.marcas.length?c.marcas:[{t:0,b:0}];
+const marcasDe=c=>c._ef||(c.marcas.length?c.marcas:[{t:0,b:0}]);
 const amarrado=c=>!!c.bpm;   // con BPM (escrito, en el nombre o sacado de dos marcas) sigue la rejilla de la sesión
 const bpmMarcas=m=>(m[m.length-1].b-m[0].b)*60/(m[m.length-1].t-m[0].t);
+// tempo fijo: la recta que mejor pasa por todas las marcas (mínimos cuadrados), clavada en el momentum si
+// está marcado. Así un cuadro de error al marcar no cambia la velocidad del video entre marca y marca
+function rectaDe(m){
+  const u=m.find(x=>x.b===0);
+  if(u){let sn=0,sd=0;for(const x of m)if(x.b!==0){sn+=x.b*(x.t-u.t);sd+=x.b*x.b;}return{t0:u.t,s:sd?sn/sd:0};}
+  const n=m.length,mb=m.reduce((a,x)=>a+x.b,0)/n,mt=m.reduce((a,x)=>a+x.t,0)/n;
+  let sn=0,sd=0;for(const x of m){sn+=(x.b-mb)*(x.t-mt);sd+=(x.b-mb)*(x.b-mb);}
+  const s=sd?sn/sd:0;return{t0:mt-s*mb,s};
+}
+function rejillaDe(m,modo){   // las marcas que usa el motor: las tuyas (warp) o dos puntos de la recta (fijo)
+  if(m.length<2)return null;
+  if(modo==='warp')return m;
+  const r=rectaDe(m);return r.s>0?[{t:r.t0,b:0},{t:r.t0+r.s*16,b:16}]:null;
+}
+function actualizarRejilla(c){c._ef=rejillaDe(c.marcas,c.modo);if(c._ef)c.bpm=Math.round(bpmMarcas(c._ef)*100)/100;}
 function tramoDe(m,b){let i=0;while(i<m.length-2&&b>m[i+1].b)i++;return i;}
 function tDeGolpe(c,b){   // segundo del video en el que cae el golpe b
   const m=marcasDe(c);
@@ -1272,11 +1295,12 @@ function agregarClips(files){
     v.muted=true;v.playsInline=true;v.preload='metadata';v.src=URL.createObjectURL(f);
     const nombre=f.name.replace(/\.[^.]+$/,''),m=memClips[nombre];
     const c={id:clips.sig++,nombre,archivo:f.name,video:v,dur:0,error:false,t0:0,b0:0,inicioBeat:0,
-      bpm:m?m.bpm:bpmDelNombre(f.name),marcas:leerMarcas(m),fps:m&&m.fps?m.fps:30,
+      bpm:m?m.bpm:bpmDelNombre(f.name),marcas:leerMarcas(m),fps:m&&m.fps?m.fps:30,_ef:null,
+      modo:m&&m.modo==='warp'?'warp':'fijo',testigo:m&&m.testigo||null,luz:null,
       secciones:m&&m.secciones&&m.secciones.length?new Set(m.secciones):seccionesPorNombre(f.name),
       tipoFijo:!!m||ES_TEMA.test(nombre)||ES_SUBIDA.test(nombre),logo:m&&m.logo?m.logo:'encima',logoFijo:!!(m&&m.logo)};
     fijarTipo(c,m?m.tipo:ES_TEMA.test(nombre)?'tema':ES_SUBIDA.test(nombre)?'subida':'loop');
-    if(c.marcas.length>=2)c.bpm=Math.round(bpmMarcas(c.marcas)*100)/100;
+    actualizarRejilla(c);
     if(m&&m.marcas&&!m.golpes)recordarClip(c);   // pasa las marcas viejas a la cuenta nueva
     v.addEventListener('loadedmetadata',()=>{
       c.dur=isFinite(v.duration)?v.duration:0;
@@ -1385,13 +1409,15 @@ function velocidadClip(){
    Su línea de tiempo se reparte a lo largo de los compases de la subida: si el guion dice que a la mitad
    del video la luz empieza a abrirse, se abre a mitad de la subida, sea de 4, 8 o 16 compases y a cualquier BPM. */
 const clipsSubida=()=>clips.lista.filter(c=>!c.error&&c.tipo==='subida');
-// avance de la subida (0 a 1) → segundo del video. Con marcas, el golpe 1 cae al empezar la subida y la última marca en el drop
+// avance de la subida (0 a 1) → segundo del video. El video arranca al empezar la subida y su momentum (el
+// destello final) cae en el drop; con rejilla, sus golpes se reparten en proporción. Sin momentum, el último cuadro
 function tSubida(c,p){
-  const m=c.marcas;
-  if(m.length>=2&&m[m.length-1].b>0)return clamp(tDeGolpe(c,p*m[m.length-1].b),0,c.dur);
-  const t0=tGolpe1(c),fin=Math.max(t0,c.dur-0.05);return t0+p*(fin-t0);
+  const tm=c.marcas.length?tGolpe1(c):0;
+  if(tm<0.05)return p*Math.max(0,c.dur-0.05);
+  if(amarrado(c)){const b0=Math.min(0,golpeDeT(c,0));return clamp(tDeGolpe(c,b0*(1-p)),0,c.dur);}
+  return p*tm;
 }
-function prepararSubida(){   // deja el siguiente video de subida quieto en su golpe 1; false si no hay ninguno
+function prepararSubida(){   // deja el siguiente video de subida quieto en su primer cuadro; false si no hay ninguno
   let c=clips.subidaPrep;
   if(!c||c.error||c.tipo!=='subida'){
     const l=clipsSubida();if(!l.length){clips.subidaPrep=null;return false;}
@@ -1535,6 +1561,7 @@ function dibujarClip(ctx,W,H){
     cx.globalCompositeOperation='source-over';cx.globalAlpha=1;
     cx.filter=tinte?'grayscale(1) contrast(1.25)':'none';
     cx.drawImage(v,(W-dw)/2,(H-dh)/2,dw,dh);
+    if(a.testigo){const q=ESQUINAS[a.testigo];cx.fillStyle='#000';cx.fillRect((W-dw)/2+q[0]*dw*(1-TESTIGO_W),(H-dh)/2+q[1]*dh*(1-TESTIGO_H),dw*TESTIGO_W,dh*TESTIGO_H);}   // el puntito del ritmo no sale en pantalla
     cx.filter='none';
     if(tinte){   // las luces del clip toman el color de la sección
       cx.globalCompositeOperation='multiply';cx.fillStyle=rgba(mezcla(vis.colLineas,[255,255,255],0.15),1);cx.fillRect(0,0,W,H);
@@ -1609,7 +1636,7 @@ function pintarClips(){
   }
 }
 /* editor de golpes: se marca en qué cuadro cae el golpe 1 (y los que se quiera) y se escucha la rejilla con un clic */
-const golpes={c:null,clic:null,ultimo:null,rafId:0,numAMano:false};
+const golpes={c:null,clic:null,ultimo:null,rafId:0,numAMano:false,analizando:false,cancelar:false};
 const nGolpe=b=>b>=0?b+1:b;   // el golpe 1 (el momentum) es b = 0; los previos son −1, −2…: no hay golpe 0
 function textoGolpe(b){
   if(b<0)return b===-1?'previo: el tiempo justo antes del momentum':'previo: '+(-b)+' tiempos antes del momentum';
@@ -1626,13 +1653,14 @@ function abrirGolpes(c){
   golpes.c=c;
   const v=$('#golpesVideo');v.src=c.video.src;
   $('#golpesNombre').textContent=c.nombre;$('#golpesFps').value=String(c.fps);
+  $('#golpesModo').value=c.modo;$('#golpesTestigo').value=c.testigo||'';
   const listo=()=>{if(!c.dur)c.dur=v.duration;irA(tGolpe1(c));sugerirGolpe();pintarGolpes();};
   if(v.readyState>=1)listo();else v.addEventListener('loadedmetadata',listo,{once:true});
   $('#dlgGolpes').showModal();
   pintarGolpes();
 }
 function cerrarGolpes(){
-  pararClic();const v=$('#golpesVideo');v.pause();v.removeAttribute('src');v.load();golpes.c=null;
+  golpes.cancelar=true;pararClic();const v=$('#golpesVideo');v.pause();v.removeAttribute('src');v.load();golpes.c=null;
 }
 function sugerirGolpe(){   // el golpe más cercano según la rejilla actual, o un compás después de la última marca
   const c=golpes.c;if(!c||golpes.numAMano)return;
@@ -1642,27 +1670,140 @@ function sugerirGolpe(){   // el golpe más cercano según la rejilla actual, o 
   $('#golpesNum').value=String(nGolpe(b));textoNum();
 }
 function textoNum(){const n=parseInt($('#golpesNum').value,10);$('#golpesNumInfo').textContent=!isFinite(n)?'':n===0?'no hay golpe 0: antes del momentum van −1, −2…':'= '+textoGolpe(bDeN(n));}
-function ponerMarca(b){
-  const c=golpes.c,v=$('#golpesVideo'),t=+(cuadroDe(v.currentTime)/c.fps).toFixed(4);
-  // una marca por golpe y por cuadro; las que quedarían fuera de orden con la nueva se quitan
-  let m=c.marcas.filter(x=>x.b!==b&&Math.abs(x.t-t)>1e-4);
-  const antes=m.length;m=m.filter(x=>(x.b<b)===(x.t<t));
-  m.push({t,b});m.sort((p,q)=>p.b-q.b);
-  if(m.length>=2){
-    const bpm=bpmMarcas(m);
-    if(bpm<30||bpm>400){aviso('Con esa marca el video iría a '+Math.round(bpm)+' BPM: revisa el número del golpe.');return;}
-    c.bpm=Math.round(bpm*100)/100;
+/* detección por la luz: el momentum es el golpe de luz más fuerte del video y el testigo, un puntito en una
+   esquina que destella en cada tiempo. Se mide el brillo de cada cuadro (toda la imagen y cada esquina) */
+async function analizarLuz(c,avance){
+  const v=document.createElement('video');v.muted=true;v.preload='auto';v.src=c.video.src;
+  await new Promise((ok,mal)=>{v.addEventListener('loadeddata',ok,{once:true});v.addEventListener('error',mal,{once:true});});
+  const f=c.fps,dur=c.dur||v.duration,N=Math.max(2,Math.floor(dur*f)),W=160,H=Math.max(8,Math.round(160*v.videoHeight/v.videoWidth));
+  const cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d',{willReadFrequently:true});
+  const ew=Math.max(1,Math.round(W*TESTIGO_W)),eh=Math.max(1,Math.round(H*TESTIGO_H));
+  const luz=new Float32Array(N),esq={si:new Float32Array(N),sd:new Float32Array(N),ii:new Float32Array(N),id:new Float32Array(N)};
+  let n=0;
+  for(;n<N&&!golpes.cancelar;n++){
+    v.currentTime=(n+0.5)/f;await new Promise(ok=>v.addEventListener('seeked',ok,{once:true}));
+    g.drawImage(v,0,0,W,H);const d=g.getImageData(0,0,W,H).data;
+    let tot=0,si=0,sd=0,ii=0,id=0;
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+      const i=(y*W+x)*4,l=(0.2126*d[i]+0.7152*d[i+1]+0.0722*d[i+2])/255;tot+=l;
+      if(y<eh){if(x<ew)si=Math.max(si,l);else if(x>=W-ew)sd=Math.max(sd,l);}   // en las esquinas, el punto más brillante
+      else if(y>=H-eh){if(x<ew)ii=Math.max(ii,l);else if(x>=W-ew)id=Math.max(id,l);}
+    }
+    luz[n]=tot/(W*H);esq.si[n]=si;esq.sd[n]=sd;esq.ii[n]=ii;esq.id[n]=id;
+    if(n%6===0)avance(n/N);
   }
-  c.marcas=m;golpes.numAMano=false;recordarClip(c);pintarClips();pintarGolpes();
-  aviso('Golpe '+nGolpe(b)+' marcado en '+t.toFixed(3).replace('.',',')+' s'+(antes>m.length-1?' (quité '+(antes-m.length+1)+' que quedaban fuera de orden)':''));
+  v.removeAttribute('src');v.load();
+  return n<N?null:{luz,esq,f,N};
 }
-function quitarMarca(i){const c=golpes.c;c.marcas.splice(i,1);recordarClip(c);pintarClips();pintarGolpes();}
+function destellos(s,minSep){   // los cuadros en los que se enciende algo: subidas bruscas que destacan del resto
+  const N=s.length,d=new Float32Array(N);for(let n=1;n<N;n++)d[n]=Math.max(0,s[n]-s[n-1]);
+  const o=Array.from(d).sort((a,b)=>a-b),umbral=Math.max(0.05,o[Math.floor(N*0.9)]*3,o[N-1]*0.35);
+  const r=[];
+  for(let n=1;n<N;n++)if(d[n]>=umbral&&d[n]>=d[n-1]&&(n+1>=N||d[n]>=d[n+1])&&(!r.length||n-r[r.length-1]>=minSep))r.push(n);
+  return r;
+}
+function buscarTestigo(esq,f){   // la esquina con destellos regulares, y cada cuántos cuadros
+  let mejor=null;
+  for(const k in esq){
+    const on=destellos(esq[k],Math.round(f*0.2));if(on.length<4)continue;
+    const iv=on.slice(1).map((x,i)=>x-on[i]).sort((a,b)=>a-b),P=iv[Math.floor(iv.length/2)];
+    const regulares=iv.filter(x=>Math.abs(x-P)<=Math.max(1.5,P*0.2)).length;
+    if(regulares>=3&&(!mejor||regulares>mejor.regulares))mejor={esquina:k,on,P,regulares};
+  }
+  return mejor;
+}
+function buscarMomentum(luz){   // el cuadro en que arranca el golpe de luz más fuerte
+  const N=luz.length,ventana=8;let mejor=-1,sube=0;
+  for(let n=1;n<N;n++){let mn=luz[n-1];for(let j=Math.max(0,n-ventana);j<n;j++)mn=Math.min(mn,luz[j]);if(luz[n]-mn>sube){sube=luz[n]-mn;mejor=n;}}
+  if(mejor<0||sube<0.12)return null;
+  let base=luz[mejor];for(let j=Math.max(0,mejor-ventana);j<mejor;j++)base=Math.min(base,luz[j]);
+  let n=mejor;while(n>1&&luz[n-1]-base>=sube*0.5)n--;
+  return{n,sube};
+}
+async function detectarPorLuz(){
+  const c=golpes.c,bt=$('#golpesDetectar');if(!c)return;
+  if(golpes.analizando){golpes.cancelar=true;return;}
+  if(c.marcas.length&&!confirm('Lo detectado sustituye tus '+c.marcas.length+' marcas. ¿Sigo?'))return;
+  golpes.analizando=true;golpes.cancelar=false;
+  let r=null;
+  try{r=await analizarLuz(c,x=>{bt.textContent='Analizando '+Math.round(x*100)+' % · parar';});}
+  catch(e){aviso('No pude leer este video cuadro a cuadro.');}
+  golpes.analizando=false;bt.textContent='Detectar por la luz';
+  if(!r||golpes.c!==c){if(golpes.cancelar)aviso('Detección parada');return;}
+  const tes=buscarTestigo(r.esq,r.f);
+  let mom=buscarMomentum(r.luz);
+  if(c.tipo==='subida'){   // en una subida el momentum es el final en blanco: el cuadro más brillante (o el último destello)
+    let nm=0;for(let n=1;n<r.N;n++)if(r.luz[n]>r.luz[nm])nm=n;
+    if(r.luz[nm]>0.45){let n=nm;while(n>1&&r.luz[n-1]>=r.luz[nm]*0.9)n--;mom={n,sube:r.luz[nm]};}
+    else mom=tes?{n:tes.on[tes.on.length-1],sube:0}:null;
+  }
+  c.luz={luz:r.luz,esq:tes?r.esq[tes.esquina]:null,f:r.f};
+  if(!tes&&!mom){aviso('No encontré un golpe de luz claro ni un testigo que destelle: marca a mano (la curva de luz de la línea de tiempo ayuda).');pintarGolpes();return;}
+  const m=[];let msg;
+  if(tes){
+    const n0=mom?mom.n:tes.on[0];   // sin golpe de luz se numera desde el primer destello
+    const porB={};
+    for(const o of tes.on){const b=Math.round((o-n0)/tes.P);if(b!==0&&(!porB[b]||Math.abs(o-n0-b*tes.P)<Math.abs(porB[b]-n0-b*tes.P)))porB[b]=o;}
+    m.push({t:+(n0/r.f).toFixed(4),b:0});for(const b in porB)m.push({t:+(porB[b]/r.f).toFixed(4),b:+b});
+    m.sort((p,q)=>p.b-q.b);
+    c.testigo=tes.esquina;
+    // si las marcas casi caen en una recta, tempo fijo; si el video acelera o frena, warp
+    const rc=rectaDe(m),err=Math.max(...m.map(x=>Math.abs(x.t-(rc.t0+rc.s*x.b))))*r.f;
+    c.modo=err<=2?'fijo':'warp';
+    msg=(mom?'Momentum en el golpe de luz de '+segTxt(n0/r.f):'No vi un golpe de luz: numeré desde el primer destello (si el momentum es otro, ponlo y se renumera todo)')
+      +'. El testigo ('+$('#golpesTestigo').querySelector('option[value="'+tes.esquina+'"]').textContent+') marcó '+(m.length-1)+' golpes más'
+      +' · tempo '+(c.modo==='fijo'?'fijo':'warp: el video cambia de velocidad')+'. Se tapará en el show.';
+  }else{
+    const t=+(mom.n/r.f).toFixed(4);
+    $('#golpesVideo').currentTime=(mom.n+0.5)/r.f;await new Promise(ok=>$('#golpesVideo').addEventListener('seeked',ok,{once:true}));
+    m.push({t,b:0});
+    msg='Momentum en el golpe de luz de '+segTxt(t)+'. No hay testigo: marca otro golpe para darle el tempo.';
+  }
+  c.marcas=[];   // la detección parte de cero
+  fijarMarcas(c,m,msg);
+  irA(m[0].t);
+}
+const tAhora=()=>+(cuadroDe($('#golpesVideo').currentTime)/golpes.c.fps).toFixed(4);
+const segTxt=t=>t.toFixed(3).replace('.',',')+' s';
+// guarda las marcas si dan un tempo razonable; si no, no toca nada
+function fijarMarcas(c,m,msg){
+  const ef=rejillaDe(m,c.modo);
+  if(ef){const bpm=bpmMarcas(ef);if(!(bpm>=30&&bpm<=400)){aviso('Con esa marca el video iría a '+Math.round(bpm)+' BPM: revisa el número del golpe.');return false;}}
+  c.marcas=m;actualizarRejilla(c);golpes.numAMano=false;recordarClip(c);pintarClips();pintarGolpes();
+  if(msg)aviso(msg);return true;
+}
+function ponerMarca(b){
+  const c=golpes.c,t=tAhora();
+  // una marca por golpe y por cuadro: si ya había una en ese golpe o en ese cuadro, la nueva la sustituye
+  const m=c.marcas.filter(x=>x.b!==b&&Math.abs(x.t-t)>1e-4);
+  const choca=m.find(x=>(x.b<b)!==(x.t<t));   // nada se borra a escondidas: si no encaja, se avisa
+  if(choca){aviso('El golpe '+nGolpe(b)+' no puede ir aquí: el '+nGolpe(choca.b)+' está en '+segTxt(choca.t)+'. Revisa el número o quita esa marca.');return;}
+  m.push({t,b});m.sort((p,q)=>p.b-q.b);
+  fijarMarcas(c,m,'Golpe '+nGolpe(b)+' marcado en '+segTxt(t));
+}
+// el momentum se puede poner al final: las marcas que ya había se renumeran desde él, sin moverse ni borrarse
+function ponerMomentum(){
+  const c=golpes.c,t=tAhora(),otras=c.marcas.filter(x=>Math.abs(x.t-t)>1e-4);
+  let k=0;
+  if(otras.length>=2||(otras.length&&c.bpm)){const prov={...c,marcas:otras,_ef:rejillaDe(otras,c.modo)};k=Math.round(golpeDeT(prov,t));}
+  else if(otras.length===1&&otras[0].b===0)k=0;
+  else if(otras.length===1){   // una sola marca y sin BPM: no se sabe cuántos golpes hay entre las dos
+    const x=otras[0];
+    if((x.b>0)!==(x.t>t)){aviso('La marca del golpe '+nGolpe(x.b)+' queda '+(x.t<t?'antes':'después')+' del momentum: quítala y vuelve a marcarla '+(x.t<t?'como previo (−1, −2…)':'con su número desde el momentum')+'.');return;}
+  }
+  let m=otras.map(x=>({t:x.t,b:x.b-k})).filter(x=>x.b!==0);
+  m.push({t,b:0});m.sort((p,q)=>p.b-q.b);
+  if(m.some((x,i)=>i&&x.t<=m[i-1].t)){aviso('Con el momentum aquí, las marcas no quedan en orden: revisa la que esté más cerca.');return;}
+  fijarMarcas(c,m,'Momentum en '+segTxt(t)+(k?': las otras marcas se renumeraron desde él (el golpe que era el '+nGolpe(k)+' ahora es el 1)':''));
+}
+function quitarMarca(i){const c=golpes.c,m=c.marcas.slice();m.splice(i,1);fijarMarcas(c,m);}
 function rolDe(c){   // para el comando de conformar.sh
   if(c.tipo==='subida')return 'subida';if(c.tipo==='tema')return '';
   const s=[...c.secciones];if(s.length!==1)return '';return s[0]==='drop'?'coro':s[0];
 }
 function pintarGolpes(){
   const c=golpes.c;if(!c)return;
+  $('#golpesModo').value=c.modo;$('#golpesTestigo').value=c.testigo||'';
   const v=$('#golpesVideo'),t=v.currentTime||0,f=c.fps;
   $('#golpesTiempo').textContent=t.toFixed(3).replace('.',',')+' s · cuadro '+cuadroDe(t);
   $('#golpesPlay').disabled=!conRejilla(c);
@@ -1684,20 +1825,28 @@ function pintarGolpes(){
     const prev=-Math.min(0,golpeDeT(c,0)),n=compasesUtiles(c),m=c.marcas;
     const tramos=[];for(let i=0;i+1<m.length;i++)tramos.push((m[i+1].b-m[i].b)*60/(m[i+1].t-m[i].t));
     const varia=tramos.length>1&&Math.max(...tramos)-Math.min(...tramos)>0.5;
-    r='El video va a '+String(c.bpm).replace('.',',')+' BPM'+(varia?' de media (entre marcas, de '+Math.round(Math.min(...tramos))+' a '+Math.round(Math.max(...tramos))+': el motor estira cada tramo)':'')+'. '
+    let tempo;
+    if(c.modo==='fijo'&&m.length>=2){   // cuánto se separan tus marcas de la recta, en cuadros
+      const err=Math.max(...m.map(x=>Math.abs(x.t-tDeGolpe(c,x.b))))*c.fps;
+      tempo='Tempo fijo: '+String(c.bpm).replace('.',',')+' BPM, sin cambios de velocidad. '
+        +(m.length>2?'Tus marcas se separan de esa recta como mucho '+tiempos(err)+(Math.round(err)===1?' cuadro':' cuadros')+(err>2.5?' (si el video de verdad acelera o frena, cambia a Warp)':'')+'. ':'');
+    }else tempo='El video va a '+String(c.bpm).replace('.',',')+' BPM'+(varia?' de media (entre marcas, de '+Math.round(Math.min(...tramos))+' a '+Math.round(Math.max(...tramos))+': el motor estira cada tramo)':'')+'. ';
+    r=tempo
       +(prev>0.05?'Antes del momentum hay '+tiempos(prev)+' tiempos de previos. ':'')
       +'Desde el momentum hay '+n+(n===1?' compás entero. ':' compases enteros. ');
     const pv=prev>0.05?tiempos(prev):'';
     if(c.tipo==='tema')r+=pv?'Con L arranca '+pv+' tiempos antes y el momentum cae en el 1; lanzado durante la subida, cae en el drop.':'Con L entra en el 1.';
-    else if(c.tipo==='subida')r+='En la subida, el momentum cae al empezar y '+(m.length>=2&&m[m.length-1].b>0?'el golpe '+nGolpe(m[m.length-1].b)+' en el drop.':'el final del video en el drop.');
+    else if(c.tipo==='subida')r+='En la subida, el video arranca al empezar y su momentum cae justo en el drop.';
     else r+=(pv&&c.secciones.has('drop')?'Como clip del drop, con drop automático arranca '+pv+' tiempos antes para que el momentum caiga en el drop. ':'')
-      +'Al empezar su sección entra en el momentum y repite esos '+n+' compases.';
+      +'Al empezar su sección entra en el momentum y repite '+(n===1?'ese compás.':'esos '+n+' compases.');
   }
   $('#golpesResumen').textContent=r;
   // el mismo warp, aplicado al archivo con conformar.sh
-  const cf=$('#golpesConformar');cf.hidden=!(conRejilla(c)&&c.marcas.length);
-  if(!cf.hidden){const rol=rolDe(c),n=Math.max(1,compasesUtiles(c));
-    $('#golpesComando').textContent='bash conformar.sh "'+c.archivo+'" '+Math.round(c.bpm)+' '+n+(rol?' --rol '+rol:'')+' --marcas '+c.marcas.map(x=>x.t+':'+nGolpe(x.b)).join(',');}
+  const cf=$('#golpesConformar');cf.hidden=!(conRejilla(c)&&c.marcas.length&&c.tipo!=='subida');   // la subida la encaja el motor en vivo
+  if(!cf.hidden){   // con tempo fijo se pasan dos puntos de la recta: el archivo sale a una sola velocidad
+    const rol=rolDe(c),n=Math.max(1,compasesUtiles(c)),mm=c.modo==='fijo'&&c._ef?c._ef:c.marcas;
+    $('#golpesComando').textContent='bash conformar.sh "'+c.archivo+'" '+Math.round(c.bpm)+' '+n+(rol?' --rol '+rol:'')
+      +' --marcas '+mm.map(x=>(+x.t.toFixed(4))+':'+nGolpe(x.b)).join(',')+(c.testigo?' --tapar '+c.testigo:'');}
   pintarLinea();
 }
 function pintarLinea(){
@@ -1708,6 +1857,12 @@ function pintarLinea(){
   const col=k=>cs.getPropertyValue(k).trim(),x=t=>dur?t/dur*W:0;
   g.clearRect(0,0,W,H);
   if(!dur)return;
+  if(c.luz){   // la luz de cada cuadro (gris) y el testigo (color): ayudan a ver dónde están los golpes
+    const curva=(arr,color,alfa)=>{if(!arr)return;let mx=0;for(const y of arr)mx=Math.max(mx,y);if(!mx)return;
+      g.save();g.globalAlpha=alfa;g.strokeStyle=color;g.lineWidth=Math.max(1,dpr);g.beginPath();
+      arr.forEach((y,n)=>{const xx=x((n+0.5)/c.luz.f),yy=H-2*dpr-(H*0.8)*y/mx;n?g.lineTo(xx,yy):g.moveTo(xx,yy);});g.stroke();g.restore();};
+    curva(c.luz.luz,col('--fg'),0.35);curva(c.luz.esq,col('--live'),0.5);
+  }
   if(conRejilla(c)){
     const t1=clamp(tDeGolpe(c,0),0,dur),tf=clamp(tDeGolpe(c,compasesUtiles(c)*4),0,dur);
     g.fillStyle='rgba(0,0,0,.45)';g.fillRect(0,0,x(t1),H);g.fillRect(x(tf),0,W-x(tf),H);   // previos y lo que sobra
@@ -2322,7 +2477,7 @@ function enlazar(){
    $('#golpesAtras').addEventListener('click',e=>pasoCuadro(e.shiftKey?-10:-1));
    $('#golpesAdelante').addEventListener('click',e=>pasoCuadro(e.shiftKey?10:1));
    $('#golpesPlay').addEventListener('click',alternarClic);
-   $('#golpesUno').addEventListener('click',()=>{ponerMarca(0);sugerirGolpe();});
+   $('#golpesUno').addEventListener('click',()=>{ponerMomentum();sugerirGolpe();});
    $('#golpesMarcar').addEventListener('click',()=>{
      const n=parseInt($('#golpesNum').value,10);
      if(!isFinite(n)){aviso('Escribe el número del golpe');return;}
@@ -2331,6 +2486,9 @@ function enlazar(){
    });
    $('#golpesNum').addEventListener('input',()=>{golpes.numAMano=true;textoNum();});
    $('#golpesFps').addEventListener('change',e=>{const c=golpes.c;if(!c)return;c.fps=+e.target.value;recordarClip(c);pintarGolpes();});
+   $('#golpesDetectar').addEventListener('click',detectarPorLuz);
+   $('#golpesModo').addEventListener('change',e=>{const c=golpes.c;if(!c)return;c.modo=e.target.value;actualizarRejilla(c);recordarClip(c);pintarClips();pintarGolpes();});
+   $('#golpesTestigo').addEventListener('change',e=>{const c=golpes.c;if(!c)return;c.testigo=e.target.value||null;recordarClip(c);pintarGolpes();});
    v.addEventListener('seeked',()=>{pintarGolpes();if(v.paused)sugerirGolpe();});
    v.addEventListener('pause',()=>{pararClic();pintarGolpes();sugerirGolpe();});
    // ← → un cuadro (con Mayús, 10); el resto de teclas sigue manejando el show

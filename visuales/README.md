@@ -121,6 +121,12 @@ Un video hecho con IA casi nunca tiene su golpe importante en el primer cuadro, 
 3. Si el video acelera o frena, marca más golpes: entre cada dos marcas el motor estira o encoge ese tramo para que todos caigan en los golpes de la música.
 4. **Reproducir con clic** suena un clic en cada golpe del video (más agudo en el 1 de cada compás) para comprobar que encaja.
 
+El orden da igual: si marcas primero varios golpes y después el momentum, las marcas que ya tenías se renumeran desde él, sin moverse ni borrarse. Un número que no encaja con las marcas que ya hay no se acepta, y el motor dice con cuál choca.
+
+**Detectar por la luz** lo hace solo si el video se generó con la [base de prompt](fabrica/base-de-prompt.md). Busca el golpe de luz más fuerte (el momentum; en una subida, el blanco final) y, si hay un **testigo** (un puntito que destella en cada tiempo en una esquina), marca un golpe en cada destello. La línea de tiempo muestra la curva de luz del video y la del testigo, y la esquina del testigo se tapa con negro en el show.
+
+**Tempo**: con **Fijo** (el normal), el motor traza una sola velocidad que pasa lo mejor posible por todas tus marcas, clavada en el momentum. Un cuadro de error al marcar ya no hace que el video acelere y frene entre marca y marca, y el editor dice cuántos cuadros se separan tus marcas de esa recta. **Warp** estira tramo a tramo: es para videos que de verdad cambian de velocidad.
+
 Qué hace el motor con las marcas:
 
 | Tipo | Con marcas |
@@ -128,7 +134,7 @@ Qué hace el motor con las marcas:
 | Loop | Al empezar su sección entra en el momentum y repite los compases enteros que hay desde ahí |
 | Loop del drop (coro) con previos | Con drop automático, arranca sus previos durante la subida, tantos tiempos antes como tenga (8 previos, 8 tiempos antes), y el momentum cae justo en el drop. En esos últimos tiempos el coro sustituye a lo que hubiera en la subida |
 | Tema | El momentum cae en el 1 que marcaste o en el próximo, y los previos suenan antes, de modo que la entrada se oye completa. Lanzado durante la subida, el momentum cae en el drop |
-| Subida | El momentum cae al empezar la subida y la última marca, justo en el drop |
+| Subida | El video arranca al empezar la subida y su momentum (el blanco final) cae justo en el drop; sin marcas, su último cuadro |
 
 En las pruebas, un video con tres marcas a tempos distintos se mantuvo a 4 ms de media de su sitio; un coro con 8 tiempos de previos entró 8 tiempos antes del drop y su momentum cayó en el drop con 10–30 ms de diferencia, y un tema con previos llegó al 1 en su cuadro. Si el blackout del último tiempo de la subida tapa el final de los previos, se apaga en *Narrativa*. Las marcas se recuerdan por nombre de archivo. El editor da además la línea de `conformar.sh --marcas` para que el archivo ya salga con ese warp (para Resolume o de respaldo).
 
