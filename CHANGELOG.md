@@ -2,6 +2,15 @@
 
 Qué cambió en cada commit, de lo más nuevo a lo más viejo. Cada entrada lleva el commit corto entre corchetes: con `git show <commit>` se ve el detalle.
 
+## 2026-10-13
+
+### El lector de pistas escucha la música y lee la letra [91cac30]
+- **Espectro** de 24 bandas en el mapa de la canción, y **densidad** y **brillo** de cada sección.
+- **Tonalidad** con su número Camelot, contando el bajo (en *Ojos Achinados* da F#m, como su etiqueta).
+- **Groove** en una rejilla de caja de ritmos (bombo, caja y platillos en 16 semicorcheas) con el patrón (dembow, bombo en cada tiempo, backbeat, medio tiempo) y el swing.
+- **Coro por repetición** en canciones con energía pareja: la frase de 8 compases que más se repite y más fuerte suena es el drop; antes, el reggaetón salía como un drop de principio a fin.
+- **La letra**: se pega (con tiempos, cada línea cae en su sección) y *Interpretar con Claude* devuelve de qué trata, cómo cambia, el mood, qué se ve en cada video y las frases de impacto. Sin acceso a Claude desde la página, *Copiar para Claude* y pegar la respuesta.
+
 ## 2026-10-12
 
 ### Borde del logo [6e1d932]
