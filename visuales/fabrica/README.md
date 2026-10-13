@@ -13,6 +13,15 @@ guion  →  producción (IA, 3D o grabación)  →  conformar.sh  →  motor / R
 
 **[Lector de pistas](lector-de-pistas.html)**: ábrelo en Chrome y arrastra una canción. Lee el BPM, el 1 y las secciones (intro, groove, break, subida y drop), y te da los videos que hay que pedir para esa canción, con su prompt, su nombre y el número de tomas de 8 s. Así solo se generan las tomas que el motor va a usar. Las secciones se corrigen a mano si hace falta y todo se rehace solo; la canción no sale de tu ordenador.
 
+Qué lee de la música, sin IA:
+
+- **El espectro** en 24 bandas, en el mapa de la canción, y por sección la **densidad** (cuánto del espectro suena a la vez) y el **brillo**.
+- **La tonalidad** (con su número en la rueda Camelot), contando el bajo.
+- **El groove**: dónde caen el bombo, la caja y los platillos en las 16 semicorcheas del compás, como en una caja de ritmos, y qué patrón es (dembow, bombo en cada tiempo, backbeat, medio tiempo) y si tiene swing.
+- **El coro por repetición**: en las canciones donde la energía casi no cambia (reggaetón, pop), busca la frase de 8 compases que más se repite y más fuerte suena.
+
+Y lo que interpreta Claude: pegas **la letra** (si trae tiempos `[01:23.45]`, cada línea cae en su sección) y con *Interpretar con Claude* te dice de qué trata la canción, cómo cambia del verso al coro, qué mood le va, qué se ve en cada video y las frases de impacto para la pantalla. Funciona en el enlace de claude.ai (la primera vez pide permiso); en el archivo sin internet, *Copiar para Claude* te da el texto para pegarlo en un chat y luego pegas la respuesta.
+
 **Base de prompt** con el testigo del ritmo (un puntito que destella en cada tiempo) y la luz del momentum, para que el motor encaje el clip solo: [`base-de-prompt.md`](base-de-prompt.md).
 
 **Cada video tiene un rol** (intro, groove, break, subida o coro) que se decide en el guion, da forma al prompt y va en el nombre del archivo: [`roles.md`](roles.md). Para que el video se emocione en el coro (prompt por compases, tomas encadenadas, subida que cierra en el drop): [`subida-y-coro.md`](subida-y-coro.md).

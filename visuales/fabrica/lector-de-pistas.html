@@ -95,7 +95,7 @@ input[type="text"]::placeholder{color:var(--muted)}
 
 /* secciones */
 .lista{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
-.seccion{display:grid;grid-template-columns:6px minmax(130px,170px) 120px 150px minmax(0,1fr) auto;align-items:center;gap:8px 18px;padding:8px 0;border-bottom:1px solid var(--line)}
+.seccion{display:grid;grid-template-columns:6px minmax(130px,170px) 110px 150px 110px minmax(0,1fr) auto;align-items:center;gap:8px 18px;padding:8px 0;border-bottom:1px solid var(--line)}
 .seccion .muestra{align-self:stretch;background:var(--c);border-radius:2px}
 .seccion select{color:var(--c);font:800 19px/1 var(--f-display);letter-spacing:.06em;text-transform:uppercase;padding:5px 8px;background:var(--panel)}
 .datos{display:contents}
@@ -126,6 +126,27 @@ pre.texto{margin:0;font:400 12.5px/1.6 var(--f-mono);color:var(--fg);background:
 .archivo{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;padding:10px 14px;background:var(--raise);border-radius:4px}
 .archivo code{font:600 13px/1.4 var(--f-mono);overflow-wrap:anywhere;min-width:0}
 .hoja{display:grid;gap:12px}
+.medidor{display:inline-block;width:46px;height:6px;border-radius:3px;background:var(--raise);vertical-align:middle;margin-right:6px;overflow:hidden}
+.medidor i{display:block;height:100%;background:var(--c,var(--fg))}
+/* el groove como una caja de ritmos: 3 filas de 16 semicorcheas */
+.groove{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px 36px;align-items:start}
+.rejilla16{display:grid;grid-template-columns:minmax(84px,auto) repeat(16,minmax(0,1fr));gap:4px;align-items:center;min-width:0}
+.rejilla16 .fila{font:600 10.5px/1.2 var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding-right:6px}
+.rejilla16 .paso{position:relative;aspect-ratio:1;max-height:34px;border-radius:3px;background:var(--raise);overflow:hidden}
+.rejilla16 .paso i{position:absolute;inset:0;background:var(--fg)}
+.rejilla16 .paso.tiempo{box-shadow:inset 0 0 0 1px var(--muted)}
+.rejilla16 .num{font:500 10px/1 var(--f-mono);color:var(--muted);text-align:center}
+.cifras.chicas dd{font-size:22px}
+.cifras.chicas{flex-direction:column;align-items:flex-start;gap:14px}
+/* la letra */
+.letra textarea{width:100%;min-height:9em;font:400 13.5px/1.6 var(--f-mono);color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:12px 14px;resize:vertical}
+.acciones{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
+.lectura{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:18px 28px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:20px}
+.lectura>div{display:grid;gap:6px;align-content:start;min-width:0}
+.lectura ul{margin:0;padding:0;list-style:none;display:grid;gap:4px}
+.lectura li{font:800 20px/1.1 var(--f-display);letter-spacing:.04em;text-transform:uppercase}
+details.pegar summary{cursor:pointer;color:var(--muted);font-size:14px}
+details.pegar[open]{display:grid;gap:10px}
 .hoja pre.texto{font-size:13px}
 
 /* soltar una canción */
@@ -139,6 +160,9 @@ pre.texto{margin:0;font:400 12.5px/1.6 var(--f-mono);color:var(--fg);background:
   .seccion{grid-template-columns:6px minmax(0,1fr) auto}
   .seccion .muestra{grid-row:span 2}
   .datos{display:flex;flex-wrap:wrap;gap:4px 14px;grid-column:2/-1}
+  .groove{grid-template-columns:minmax(0,1fr)}
+  .rejilla16{grid-template-columns:minmax(56px,auto) repeat(16,minmax(0,1fr));gap:2px}
+  .cifras.chicas{flex-direction:row;flex-wrap:wrap}
 }
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
 </style>
@@ -166,6 +190,7 @@ pre.texto{margin:0;font:400 12.5px/1.6 var(--f-mono);color:var(--fg);background:
       </div>
       <dl class="cifras">
         <div class="cifra grande"><dt>BPM</dt><dd id="vBpm">–</dd></div>
+        <div class="cifra"><dt>Tonalidad</dt><dd id="vTono">–</dd></div>
         <div class="cifra"><dt>Compases</dt><dd id="vCompases">–</dd></div>
         <div class="cifra"><dt>Duración</dt><dd id="vDur">–</dd></div>
         <div class="cifra"><dt>El 1 cae en</dt><dd id="vUno">–</dd></div>
@@ -195,6 +220,45 @@ pre.texto{margin:0;font:400 12.5px/1.6 var(--f-mono);color:var(--fg);background:
       <p class="nota">Lo que el motor tocará en cada parte, por compases. Si algo no cuadra, cambia la sección o mueve su inicio un compás: los videos y la hoja se rehacen solos.</p>
     </div>
     <ol class="lista" id="listaSecciones"></ol>
+  </section>
+
+  <section class="bloque" aria-labelledby="tGroove">
+    <div class="bloque-cab">
+      <h2 id="tGroove">El groove</h2>
+      <p class="nota" id="grooveNota">Dónde caen los golpes de cada parte dentro del compás, en sus 16 semicorcheas, promediado en los compases con bajo. Cuanto más clara la casilla, más fuerte el golpe.</p>
+    </div>
+    <div class="groove">
+      <div class="rejilla16" id="rejilla16" role="img" aria-label="Patrón de golpes por semicorchea"></div>
+      <dl class="cifras chicas" id="grooveCifras"></dl>
+    </div>
+  </section>
+
+  <section class="bloque letra" aria-labelledby="tLetra">
+    <div class="bloque-cab">
+      <h2 id="tLetra">La letra</h2>
+      <p class="nota">Pégala aquí (la de Spotify o Musixmatch, o la tuya). Si trae tiempos como <code>[01:23.45]</code>, cada línea se sitúa en su sección. Claude la lee junto con todo lo que midió el lector y escribe de qué trata, qué se ve en cada video y las frases para la pantalla.</p>
+    </div>
+    <textarea id="txtLetra" rows="8" spellcheck="false" placeholder="[00:22.10] Primera línea de la letra…"></textarea>
+    <div class="acciones">
+      <button class="boton primario" type="button" id="btnInterpretar" hidden>Interpretar con Claude</button>
+      <button class="boton" type="button" id="btnPararIA" hidden>Parar</button>
+      <button class="boton" type="button" data-copiar="pedidoTexto">Copiar para Claude</button>
+      <span class="estado" id="estadoLetra" role="status"></span>
+    </div>
+    <pre id="pedidoTexto" hidden></pre>
+    <details class="pegar">
+      <summary>¿Se lo preguntaste a Claude en un chat? Pega aquí su respuesta</summary>
+      <textarea id="txtRespuesta" rows="4" spellcheck="false" placeholder='{"tema": "…", "videos": {…}, "frases": […]}'></textarea>
+      <div><button class="boton" type="button" id="btnAplicar">Aplicar la respuesta</button></div>
+    </details>
+    <div class="lectura" id="lectura" hidden>
+      <div><span class="eyebrow">De qué trata</span><p id="lTema"></p></div>
+      <div><span class="eyebrow">Cómo cambia</span><p id="lArco"></p></div>
+      <div><span class="eyebrow">Mood propuesto</span><p id="lMood"></p></div>
+      <div><span class="eyebrow">Frases para la pantalla</span><ul id="lFrases"></ul><pre id="frasesTexto" hidden></pre>
+        <div><button class="boton mini" type="button" data-copiar="frasesTexto">Copiar frases</button></div>
+        <p class="nota">Pégalas en el motor, en <em>Frases de impacto → Una frase por línea</em>.</p></div>
+    </div>
   </section>
 
   <section class="bloque" aria-labelledby="tVideos">
@@ -327,11 +391,12 @@ function media(P,t0,t1){
 }
 // tres bandas: bombo y bajo (< 150 Hz), medios (voces, acordes) y agudos (platillos, redobles)
 async function bandas(buf){
-  const n=Math.max(HOP*4,Math.ceil(buf.duration*SR)),oc=new OfflineAudioContext(3,n,SR);
+  const n=Math.max(HOP*4,Math.ceil(buf.duration*SR)),oc=new OfflineAudioContext(4,n,SR);
   oc.destination.channelCountMode='explicit';oc.destination.channelInterpretation='discrete';
   const src=oc.createBufferSource();src.buffer=buf;
-  const mg=oc.createChannelMerger(3),filtro=(tipo,f,q)=>{const b=oc.createBiquadFilter();b.type=tipo;b.frequency.value=f;b.Q.value=q;src.connect(b);return b;};
+  const mg=oc.createChannelMerger(4),filtro=(tipo,f,q)=>{const b=oc.createBiquadFilter();b.type=tipo;b.frequency.value=f;b.Q.value=q;src.connect(b);return b;};
   filtro('lowpass',150,0.707).connect(mg,0,0);filtro('bandpass',800,0.6).connect(mg,0,1);filtro('highpass',3500,0.707).connect(mg,0,2);
+  src.connect(mg,0,3);   // la señal entera, para el espectro
   mg.connect(oc.destination);src.start();
   const r=await oc.startRendering(),N=Math.floor(n/HOP),E=[];
   for(let b=0;b<3;b++){
@@ -339,20 +404,20 @@ async function bandas(buf){
     for(let i=0;i<N;i++){let s=0;const o=i*HOP;for(let k=0;k<HOP;k++){const v=x[o+k];s+=v*v;}e[i]=s/HOP;}
     E.push(e);
   }
-  return E;
+  return{E,x:r.getChannelData(3)};
 }
 // dónde algo golpea: subidas de energía por banda (el bombo pesa más), sin la media local
 function golpes(E){
-  const N=E[0].length,o=new Float32Array(N),bajos=new Float32Array(N),act=new Float32Array(N),peso=[1,0.6,0.6];
+  const N=E[0].length,o=new Float32Array(N),bajos=new Float32Array(N),act=new Float32Array(N),peso=[1,0.6,0.6],at=[0,1,2].map(()=>new Float32Array(N));
   for(let b=0;b<3;b++){
     const e=E[b],ref=percentil(e,0.98)||1e-12,L=new Float32Array(N);
     for(let i=0;i<N;i++){L[i]=Math.log1p(100*e[i]/ref);const d=i?L[i]-L[i-1]:0;if(d>0){o[i]+=peso[b]*d;if(!b)bajos[i]=d;}}
-    // en medios y agudos, solo los saltos claros sobre lo que sonaba justo antes: un acorde que vibra no cuenta
-    if(b)for(let i=3;i<N;i++){const d=L[i]-Math.max(L[i-1],L[i-2],L[i-3]);if(d>0.3)act[i]+=d;}
+    // ataques: solo los saltos claros sobre lo que sonaba justo antes (un acorde que vibra no cuenta)
+    for(let i=3;i<N;i++){const d=L[i]-Math.max(L[i-1],L[i-2],L[i-3]);if(d>0){at[b][i]=d;if(b&&d>0.3)act[i]+=d;}}
   }
   const R=25,P=acumular(o),g=new Float32Array(N);
   for(let i=0;i<N;i++){const a=Math.max(0,i-R),z=Math.min(N,i+R+1);g[i]=Math.max(0,o[i]-(P[z]-P[a])/(z-a));}
-  return{o:g,bajos,act};   // act: cuánto golpean los medios y agudos (redobles, platillos)
+  return{o:g,bajos,act,at};   // act: cuánto golpean los medios y agudos (redobles, platillos); at: ataques por banda
 }
 // tempo aproximado por autocorrelación (60–200 BPM), con preferencia suave por los 120
 function tempoBruto(o){
@@ -423,6 +488,93 @@ function buscarUno(A){
   let k0=r;while(k0<kIni-1)k0+=4;
   A.uno=A.t0+k0*T;
 }
+// espectro: FFT de 2048 muestras (128 ms) cada 64 ms. De cada cuadro salen 24 bandas (40 Hz–7,5 kHz) para el timbre
+// y el mapa, la armonía en 12 notas (croma) y el brillo (centroide)
+function fftPotencia(n){
+  const lev=Math.log2(n),inv=new Uint32Array(n),co=new Float64Array(n/2),si=new Float64Array(n/2),re=new Float64Array(n),im=new Float64Array(n),P=new Float64Array(n/2+1);
+  for(let i=0;i<n;i++){let r=0;for(let b=0;b<lev;b++)r|=((i>>b)&1)<<(lev-1-b);inv[i]=r;}
+  for(let i=0;i<n/2;i++){co[i]=Math.cos(2*Math.PI*i/n);si[i]=-Math.sin(2*Math.PI*i/n);}
+  return x=>{
+    for(let i=0;i<n;i++){re[inv[i]]=x[i];im[inv[i]]=0;}
+    for(let t=2;t<=n;t*=2){
+      const h=t/2,paso=n/t;
+      for(let i=0;i<n;i+=t)for(let j=0,k=0;j<h;j++,k+=paso){
+        const a=i+j,b=a+h,tr=re[b]*co[k]-im[b]*si[k],ti=re[b]*si[k]+im[b]*co[k];
+        re[b]=re[a]-tr;im[b]=im[a]-ti;re[a]+=tr;im[a]+=ti;
+      }
+    }
+    for(let i=0;i<=n/2;i++)P[i]=re[i]*re[i]+im[i]*im[i];
+    return P;
+  };
+}
+const NBANDAS=24;
+function espectro(x){
+  const n=2048,hop=1024,fft=fftPotencia(n),ven=new Float64Array(n),buf=new Float64Array(n);
+  for(let i=0;i<n;i++)ven[i]=0.5-0.5*Math.cos(2*Math.PI*i/(n-1));
+  const F=Math.max(0,Math.floor((x.length-n)/hop)+1),bordes=[];
+  for(let b=0;b<=NBANDAS;b++)bordes.push(Math.max(b?bordes[b-1]+1:1,Math.round(40*Math.pow(7500/40,b/NBANDAS)*n/SR)));
+  const nota=new Int8Array(n/2+1).fill(-1);
+  for(let k=1;k<=n/2;k++){const f=k*SR/n;if(f>=110&&f<=4000)nota[k]=((Math.round(69+12*Math.log2(f/440))%12)+12)%12;}
+  const croma=new Float32Array(F*12),bandas=new Float32Array(F*NBANDAS),brillo=new Float32Array(F);
+  for(let t=0;t<F;t++){
+    const o=t*hop;for(let i=0;i<n;i++)buf[i]=x[o+i]*ven[i];
+    const P=fft(buf);let tot=0,cen=0;
+    for(let k=1;k<=n/2;k++){const p=P[k];if(nota[k]>=0)croma[t*12+nota[k]]+=Math.sqrt(p);tot+=p;cen+=p*k;}
+    brillo[t]=tot?cen/tot*SR/n:0;
+    for(let b=0;b<NBANDAS;b++){let e=0;for(let k=bordes[b];k<bordes[b+1];k++)e+=P[k];bandas[t*NBANDAS+b]=e;}
+  }
+  return{F,hop,n,croma,bandas,brillo,t:i=>(i*hop+n/2)/SR,cuadro:t=>Math.round((t*SR-n/2)/hop)};
+}
+// tonalidad: la armonía de toda la canción, con el bajo incluido (FFT fina de 8192 muestras desde 40 Hz),
+// contra los perfiles de Krumhansl de las 24 tonalidades
+const NOTAS=['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+const CAMELOT_MAY=['8B','3B','10B','5B','12B','7B','2B','9B','4B','11B','6B','1B'],CAMELOT_MEN=['5A','12A','7A','2A','9A','4A','11A','6A','1A','8A','3A','10A'];
+function tonalidad(x){
+  const n=8192,hop=4096,fft=fftPotencia(n),ven=new Float64Array(n),buf=new Float64Array(n),nota=new Int8Array(n/2+1).fill(-1),c=new Float64Array(12);
+  for(let i=0;i<n;i++)ven[i]=0.5-0.5*Math.cos(2*Math.PI*i/(n-1));
+  for(let k=1;k<=n/2;k++){const f=k*SR/n;if(f>=40&&f<=2000)nota[k]=((Math.round(69+12*Math.log2(f/440))%12)+12)%12;}
+  for(let o=0;o+n<=x.length;o+=hop){
+    for(let i=0;i<n;i++)buf[i]=x[o+i]*ven[i];
+    const P=fft(buf),cc=new Float64Array(12);let s=0;
+    for(let k=1;k<=n/2;k++)if(nota[k]>=0){const v=Math.sqrt(P[k]);cc[nota[k]]+=v;s+=v;}
+    if(s>0)for(let k=0;k<12;k++)c[k]+=cc[k]/s;
+  }
+  const MAY=[6.35,2.23,3.48,2.33,4.38,4.09,2.52,5.19,2.39,3.66,2.29,2.88],MEN=[6.33,2.68,3.52,5.38,2.60,3.53,2.54,4.75,3.98,2.69,3.34,3.17];
+  const corr=(p,r)=>{let mx=0,mp=0;for(let k=0;k<12;k++){mx+=c[(k+r)%12]/12;mp+=p[k]/12;}let a=0,b=0,d=0;for(let k=0;k<12;k++){const u=c[(k+r)%12]-mx,v=p[k]-mp;a+=u*v;b+=u*u;d+=v*v;}return a/Math.sqrt(b*d||1);};
+  let mejor={r:0,menor:false,v:-2},segundo=-2;
+  for(let r=0;r<12;r++)for(const menor of[false,true]){const v=corr(menor?MEN:MAY,r);if(v>mejor.v){segundo=mejor.v;mejor={r,menor,v};}else if(v>segundo)segundo=v;}
+  return{nombre:NOTAS[mejor.r]+(mejor.menor?'m':''),camelot:(mejor.menor?CAMELOT_MEN:CAMELOT_MAY)[mejor.r],menor:mejor.menor,claridad:mejor.v-segundo};
+}
+// groove: dónde caen los golpes de cada banda en las 16 semicorcheas del compás, promediado en los compases con bajo
+function groove(A){
+  const B=A.barras,usar=B.map((b,j)=>j).filter(j=>B[j].bajo),js=usar.length>=4?usar:B.map((b,j)=>j);
+  const sem=A.T/4,v=Math.max(1,Math.round(sem*FPS*0.25)),h=[0,1,2].map(()=>new Float64Array(16));
+  let sw=0,swp=0;
+  for(const j of js)for(let st=0;st<16;st++){
+    const t=A.uno+(4*j+st/4)*A.T,i=Math.round(t*FPS);
+    for(let b=0;b<3;b++){
+      let m=0,mi=i;for(let k=i-v;k<=i+v;k++){const x=A.at[b][k]||0;if(x>m){m=x;mi=k;}}
+      h[b][st]+=m;
+      if(b===2&&st%2){   // el swing: cuánto se retrasan los platillos de las semicorcheas pares
+        let m2=0,k2=i;const w=Math.round(sem*FPS*0.4);for(let k=i-w;k<=i+w;k++){const x=A.at[2][k]||0;if(x>m2){m2=x;k2=k;}}
+        sw+=m2*((k2/FPS-t)/sem);swp+=m2;
+      }
+    }
+  }
+  for(const x of h){const mx=Math.max(...x)||1;for(let k=0;k<16;k++)x[k]/=mx;}
+  const[K,S,H]=h,SN=S.map((x,k)=>(x+H[k])/2),m=(a,ix)=>ix.reduce((s,k)=>s+a[k],0)/ix.length;
+  const cuatro=m(K,[0,4,8,12])-m(K,[2,6,10,14])>0.3&&Math.min(K[0],K[4],K[8],K[12])>0.5;
+  const dembow=m(SN,[3,6,11,14])-m(SN,[1,2,5,9,10,13]);
+  const backbeat=m(SN,[4,12])-m(SN,[0,8]),medio=SN[8]-m(SN,[4,12]);
+  let nombre='Sin patrón claro';
+  if(dembow>0.2)nombre='Dembow (reggaetón)';
+  else if(cuatro&&backbeat>0.15)nombre='Bombo en cada tiempo y caja en 2 y 4 (house)';
+  else if(cuatro)nombre='Bombo en cada tiempo (techno, house)';
+  else if(medio>0.2)nombre='Medio tiempo (trap)';
+  else if(backbeat>0.15)nombre='Backbeat (pop, hip hop)';
+  const swing=swp?sw/swp:0;
+  return{h,nombre,swing,compases:js.length};
+}
 // cada compás con su energía por banda y si tiene bombo o bajo
 function barras(A){
   const B=[],T=A.T;
@@ -439,6 +591,19 @@ function barras(A){
   {const ref=percentil(B.map(b=>b.act),0.95);for(const b of B)b.act=Math.max(b.act,ref-30);}
   const refLow=percentil(B.map(b=>b.low),0.9),refOn=percentil(B.map(b=>b.on),0.9);
   for(const b of B)b.bajo=b.low>refLow-8&&b.on>0.3*refOn;
+  // del espectro: armonía (croma), timbre (24 bandas en dB), densidad (cuántas bandas suenan cerca de su máximo) y brillo
+  const S=A.S;
+  if(S&&S.F){
+    for(const b of B){
+      const i0=Math.max(0,S.cuadro(b.a)),i1=Math.min(S.F,Math.max(i0+1,S.cuadro(b.z)));
+      const c=new Float64Array(12),tb=new Float64Array(NBANDAS);let br=0;
+      for(let i=i0;i<i1;i++){for(let k=0;k<12;k++)c[k]+=S.croma[i*12+k];for(let k=0;k<NBANDAS;k++)tb[k]+=S.bandas[i*NBANDAS+k];br+=S.brillo[i];}
+      const l=Math.hypot(...c)||1;b.croma=Array.from(c,v=>v/l);b.timbre=Array.from(tb,v=>dB(v/(i1-i0)));b.brillo=br/(i1-i0);
+    }
+    const ref=[];for(let k=0;k<NBANDAS;k++)ref.push(percentil(B.map(b=>b.timbre[k]),0.95));
+    // densidad: lo cerca que suena cada banda de su máximo en la canción (0: casi vacío, 1: todo el espectro lleno)
+    for(const b of B)b.dens=b.timbre.reduce((t,v,k)=>t+Math.max(0,Math.min(1,(v-(ref[k]-24))/24)),0)/NBANDAS;
+  }
   return B;
 }
 // la subida antes de un drop: desde el último compás en el piso de energía hasta el drop, si de verdad sube
@@ -501,6 +666,9 @@ function seccionar(B){
     rol.fill('drop',s.a,s.b);
     if(L)rol.fill('subida',s.a-L,s.a);
   });
+  // canciones sin contraste de energía (reggaetón, pop, techno): el coro se busca por repetición
+  const nDrop=rol.filter(r=>r==='drop').length,plano=nDrop>0.45*n||tramos(rol).some(t=>(t.rol==='drop'||t.rol==='groove')&&t.b-t.a>=40);
+  const porRep=plano&&B[0].timbre?coroPorRepeticion(B,rol,segs,q):null;
   // intro: lo que suena antes del primer bajo o, si arranca con bajo, un primer tramo bastante más flojo
   let j=0;while(j<n&&rol[j]==='break'){rol[j]='intro';j++;}
   if(j===0&&rol[0]==='groove'){
@@ -510,7 +678,37 @@ function seccionar(B){
   // un final sin bajo después del último drop es la salida: como el intro
   let z=n-1;while(z>=0&&rol[z]==='break')z--;
   if(z<n-1&&rol.slice(0,z+1).includes('drop'))rol.fill('intro',z+1,n);
-  return tramos(rol);
+  const t=tramos(rol);t.repeticion=porRep;
+  return t;
+}
+// el coro es lo que más se repite y más fuerte suena: se parte el cuerpo de la canción en frases de 8 compases,
+// se compara cada una con las demás (timbre y armonía, compás a compás) y gana la que mejor junta energía y repetición
+function coroPorRepeticion(B,rol,segs,q){
+  const n=B.length,cuerpo=segs.filter(s=>s.bajo);if(!cuerpo.length)return null;
+  const b0=cuerpo[0].a,b1=cuerpo[cuerpo.length-1].b;if(b1-b0<16)return null;
+  const NB=B[0].timbre.length,med=new Float64Array(NB);
+  for(const b of B)for(let k=0;k<NB;k++)med[k]+=b.timbre[k]/n;
+  const T=B.map(b=>{const v=b.timbre.map((x,k)=>x-med[k]),l=Math.hypot(...v)||1;return v.map(x=>x/l);});
+  const M=[];for(let i=0;i<n;i++){M.push(new Float64Array(n));for(let j=0;j<=i;j++){let t=0,c=0;for(let k=0;k<NB;k++)t+=T[i][k]*T[j][k];for(let k=0;k<12;k++)c+=B[i].croma[k]*B[j].croma[k];M[i][j]=0.6*t+0.4*c;}}
+  for(let i=0;i<n;i++)for(let j=i+1;j<n;j++)M[i][j]=M[j][i];
+  // la fase de las frases de 8: donde cambia el tablero de parecidos (4 compases a cada lado)
+  const nov=new Float64Array(n),L=4;
+  for(let j=L;j<=n-L;j++){let s=0;for(let a=j-L;a<j+L;a++)for(let b=j-L;b<j+L;b++)s+=((a<j)===(b<j)?1:-1)*M[a][b];nov[j]=Math.max(0,s);}
+  const suma=p=>{let s=0;for(let j=p;j<n;j+=8)s+=nov[j];return s;},p8=suma(q)>=suma(q+4)?q:q+4;
+  const cortes=[b0];for(let j=b0+1;j<b1;j++)if(j%8===p8)cortes.push(j);cortes.push(b1);
+  let bl=[];for(let i=0;i+1<cortes.length;i++)bl.push({a:cortes[i],b:cortes[i+1]});
+  for(let i=0;i<bl.length;i++)if(bl.length>1&&bl[i].b-bl[i].a<4){const v=i?bl[i-1]:bl[i+1];v.a=Math.min(v.a,bl[i].a);v.b=Math.max(v.b,bl[i].b);bl.splice(i,1);i--;}
+  if(bl.length<3)return null;
+  const sim=(x,y)=>{const m=Math.min(x.b-x.a,y.b-y.a);let s=0;for(let i=0;i<m;i++)s+=M[x.a+i][y.a+i];return s/m;};
+  for(const x of bl){let e=0;for(let j=x.a;j<x.b;j++)e+=(B[j].low+B[j].fh)/2;x.e=e/(x.b-x.a);x.rep=Math.max(...bl.filter(y=>y!==x).map(y=>sim(x,y)));}
+  const z=k=>{const v=bl.map(x=>x[k]),m=v.reduce((a,b)=>a+b,0)/v.length,d=Math.sqrt(v.reduce((a,b)=>a+(b-m)**2,0)/v.length)||1;return x=>(x[k]-m)/d;};
+  const ze=z('e'),zr=z('rep'),aptos=bl.filter(x=>x.b-x.a>=6);if(!aptos.length)return null;
+  const c=aptos.reduce((m,x)=>ze(x)+zr(x)>ze(m)+zr(m)?x:m),mejor=Math.max(...bl.filter(y=>y!==c).map(y=>sim(c,y)));
+  const coros=bl.filter(y=>y===c||(sim(c,y)>=mejor-0.05&&sim(c,y)>=0.5));
+  for(const s of segs)rol.fill(s.bajo?'groove':'break',s.a,s.b);
+  for(const x of coros)for(let j=x.a;j<x.b;j++)if(rol[j]==='groove')rol[j]='drop';
+  for(const x of coros)if(x.a>b0&&rol[x.a-1]!=='drop'){const Ls=subidaAntes(B,rol,x.a,b0);for(let j=x.a-Ls;j<x.a;j++)if(rol[j]==='groove'||rol[j]==='break')rol[j]='subida';}
+  return{coros:coros.map(x=>({a:x.a,b:x.b})),parecido:mejor};
 }
 function tramos(rol){const s=[];rol.forEach((r,j)=>{const u=s[s.length-1];if(u&&u.rol===r)u.b=j+1;else s.push({a:j,b:j+1,rol:r});});return s;}
 
@@ -525,18 +723,22 @@ function estado(t,error){const e=$('#estado');e.textContent=t;e.classList.toggle
 async function analizar(buf,titulo,ejemplo){
   parar();
   estado('Escuchando las bandas…');await respiro();
-  const E=await bandas(buf);
+  const{E,x}=await bandas(buf);
   estado('Buscando el tempo y el 1…');await respiro();
-  const{o,bajos,act}=golpes(E),f=afinarTempo(o,tempoBruto(o)),T=60/f.bpm;
-  const nuevo={buffer:buf,dur:buf.duration,titulo,ejemplo,E,P:E.map(acumular),Pb:acumular(bajos),Pa:acumular(act),o,bpm:f.bpm,T};
+  const{o,bajos,act,at}=golpes(E),f=afinarTempo(o,tempoBruto(o)),T=60/f.bpm;
+  estado('Leyendo el espectro y la armonía…');await respiro();
+  const S=espectro(x);
+  const nuevo={buffer:buf,dur:buf.duration,titulo,ejemplo,E,P:E.map(acumular),Pb:acumular(bajos),Pa:acumular(act),at,o,bpm:f.bpm,T,S,tono:tonalidad(x)};
   const r=ajustarRejilla(o,T,f.fase*T+CAL);
   nuevo.t0=r.t0;nuevo.res=r.res;nuevo.cubre=r.cubre;
   buscarUno(nuevo);
   A=nuevo;rep.pos=0;
   recalcular();
-  estado(A.barras.length<8?'La canción es muy corta para encontrar secciones: revisa el tempo y el 1.':'Listo. Escúchala con el clic para comprobar el 1, y corrige las secciones si hace falta.');
+  estado(A.barras.length<8?'La canción es muy corta para encontrar secciones: revisa el tempo y el 1.':A.repeticion?
+    'Listo. La energía casi no cambia en esta canción, así que el coro se buscó por repetición: '+A.repeticion.coros.map(c=>'c. '+(c.a+1)+'–'+c.b).join(' y ')+' (se parecen un '+Math.round(A.repeticion.parecido*100)+' %). Escúchala para comprobarlo.':
+    'Listo. Escúchala con el clic para comprobar el 1, y corrige las secciones si hace falta.');
 }
-function recalcular(){A.barras=barras(A);A.segs=seccionar(A.barras);pintarTodo();}
+function recalcular(){A.barras=barras(A);A.segs=seccionar(A.barras);A.repeticion=A.segs.repeticion;A.groove=groove(A);pintarTodo();}
 function cambiarTempo(f){
   if(!A)return;A.bpm=Math.round(A.bpm*f*100)/100;A.T=60/A.bpm;   // el 1 se queda donde estaba
   A.res=null;recalcular();
@@ -555,19 +757,21 @@ const tBar=j=>A.uno+4*j*A.T;
 const nBpm=b=>Number.isInteger(b)?String(b):coma(b,2);
 function posicionTxt(t){
   if(!A)return'';
-  if(t<A.uno-0.01)return mmss(t,1)+' · antes del 1';
-  const k=Math.floor((t-A.uno)/A.T+1e-6);
+  if(t<A.uno-0.05)return mmss(t,1)+' · antes del 1';
+  const k=Math.max(0,Math.floor((t-A.uno)/A.T+1e-6));
   return mmss(t,1)+' · c. '+(Math.floor(k/4)+1)+'.'+(k%4+1);
 }
 
 /* ── pintar ── */
-function pintarTodo(){pintarCifras();pintarMapa();pintarSecciones();pintarTarjetas();}
+function pintarTodo(){pintarCifras();pintarMapa();pintarSecciones();pintarGroove();restaurarLetra();pintarTarjetas();}
 function pintarCifras(){
   $('#origen').textContent=A.ejemplo?'Ejemplo · ábrela con tu canción':'Tu canción';
   $('#tituloPista').textContent=A.titulo;
   $('#vBpm').textContent=nBpm(A.bpm);
   $('#vCompases').textContent=A.barras.length;
   $('#vDur').textContent=mmss(A.dur);
+  const tn=$('#vTono');tn.textContent=A.tono?(A.tono.claridad<0.03?'¿'+A.tono.nombre+'?':A.tono.nombre+' · '+A.tono.camelot):'–';
+  tn.title=A.tono?(A.tono.claridad<0.03?'Dudosa: la armonía no apunta a una sola tonalidad':'Tonalidad estimada; '+A.tono.camelot+' en la rueda Camelot'):'';
   $('#vUno').textContent=coma(Math.max(0,A.uno),2)+' s';
   const v=$('#vRejilla');v.classList.remove('firme','dudosa');
   if(A.res==null){v.textContent='a mano';v.title='Corregida a mano: compruébala con el clic';}
@@ -595,16 +799,21 @@ function pintarMapa(){
     const txt=NOMBRE[s.rol].toUpperCase();
     if(c.measureText(txt).width+10<x1-x0){c.fillStyle=color('--ink');c.fillText(txt,x0+5,(arriba-4)/2+1);}
   }
-  // energía: el bombo y el bajo como masa, los medios y agudos como línea
-  const ref=[0,1,2].map(b=>dB(percentil(A.E[b],0.99))),rango=36;
-  const nivel=(v,rf)=>Math.max(0,Math.min(1,(dB(v)-(rf-rango))/rango));
-  c.beginPath();c.moveTo(0,arriba+alto);
-  for(let px=0;px<=W;px++){const t0=px/W*A.dur,t1=(px+1)/W*A.dur;c.lineTo(px,arriba+alto-nivel(media(A.P[0],t0,t1),ref[0])*alto*0.95);}
-  c.lineTo(W,arriba+alto);c.closePath();c.fillStyle=color('--muted');c.globalAlpha=0.38;c.fill();c.globalAlpha=1;
-  const refFh=dB(10**(ref[1]/10)+10**(ref[2]/10));
-  c.beginPath();
-  for(let px=0;px<=W;px++){const t0=px/W*A.dur,t1=(px+1)/W*A.dur,v=media(A.P[1],t0,t1)+media(A.P[2],t0,t1),y=arriba+alto-nivel(v,refFh)*alto*0.95;px?c.lineTo(px,y):c.moveTo(px,y);}
-  c.strokeStyle=color('--fg');c.lineWidth=1.25;c.globalAlpha=0.85;c.stroke();c.globalAlpha=1;
+  // el espectro: 24 bandas, los graves abajo; cada banda contra su propio máximo, para ver dónde suena cada cosa
+  const S=A.S,NB=NBANDAS;
+  if(S&&S.F){
+    if(!S.ref){S.ref=[];for(let k=0;k<NB;k++){const v=[];for(let i=0;i<S.F;i+=2)v.push(S.bandas[i*NB+k]);S.ref.push(dB(percentil(v,0.98)));}}
+    const hb=alto/NB;c.fillStyle=color('--fg');
+    for(let px=0;px<W;px++){
+      const i0=Math.max(0,S.cuadro(px/W*A.dur)),i1=Math.min(S.F,Math.max(i0+1,S.cuadro((px+1)/W*A.dur)));
+      for(let k=0;k<NB;k++){
+        let e=0;for(let i=i0;i<i1;i++)e+=S.bandas[i*NB+k];
+        const v=Math.max(0,Math.min(1,(dB(e/(i1-i0))-(S.ref[k]-30))/30));
+        if(v>0.03){c.globalAlpha=0.85*v*v;c.fillRect(px,arriba+alto-(k+1)*hb,1,hb+0.5);}
+      }
+    }
+    c.globalAlpha=1;
+  }
   // compases: rayita en cada uno, más larga cada 4, número cada 8 o 16 según el ancho
   const pxBar=x(4*A.T),cada=pxBar*8>=34?8:pxBar*16>=34?16:32;
   c.font='500 10px '+color('--f-mono');c.textBaseline='alphabetic';
@@ -635,10 +844,32 @@ function pintarSecciones(){
     const fin=Math.min(A.dur,tBar(s.b));
     li.innerHTML='<span class="muestra" aria-hidden="true"></span>'+
       '<select id="rol-'+i+'" data-i="'+i+'" aria-label="Sección de los compases '+(s.a+1)+' a '+s.b+'">'+ROLES.map(r=>'<option value="'+r+'"'+(r===s.rol?' selected':'')+'>'+NOMBRE[r]+'</option>').join('')+'</select>'+
-      '<span class="datos"><span class="dato">c. '+(s.a+1)+'–'+s.b+'</span><span class="dato">'+mmss(tBar(s.a),1)+'–'+mmss(fin,1)+'</span><span class="dato largo">'+(s.b-s.a)+(s.b-s.a===1?' compás':' compases')+'</span></span>'+
+      '<span class="datos"><span class="dato">c. '+(s.a+1)+'–'+s.b+'</span><span class="dato">'+mmss(tBar(s.a),1)+'–'+mmss(fin,1)+'</span>'+
+      (dens(s)!=null?'<span class="dato" title="Densidad: cuánto del espectro suena a la vez">'+'<span class="medidor"><i style="width:'+Math.round(dens(s)*100)+'%"></i></span>'+Math.round(dens(s)*100)+' %</span>':'<span></span>')+
+      '<span class="dato largo">'+(s.b-s.a)+(s.b-s.a===1?' compás':' compases')+'</span></span>'+
       '<span class="mover">'+(i?'<button class="boton mini" type="button" data-i="'+i+'" data-d="-1" title="Que empiece un compás antes" aria-label="'+NOMBRE[s.rol]+': empezar un compás antes">−1</button><button class="boton mini" type="button" data-i="'+i+'" data-d="1" title="Que empiece un compás después" aria-label="'+NOMBRE[s.rol]+': empezar un compás después">+1</button>':'')+'</span>';
     ol.appendChild(li);
   });
+}
+const dens=s=>{const b=A.barras.slice(s.a,s.b).filter(x=>x.dens!=null);return b.length?b.reduce((t,x)=>t+x.dens,0)/b.length:null;};
+const brillo=s=>{const b=A.barras.slice(s.a,s.b).filter(x=>x.brillo!=null);return b.length?b.reduce((t,x)=>t+x.brillo,0)/b.length:null;};
+function pintarGroove(){
+  const g=A.groove,R=$('#rejilla16'),D=$('#grooveCifras');R.textContent='';D.textContent='';
+  if(!g)return;
+  const filas=[['Bombo y bajo',g.h[0]],['Caja y voces',g.h[1]],['Platillos',g.h[2]]];
+  const add=(cls,txt)=>{const e=document.createElement('span');e.className=cls;if(txt!=null)e.textContent=txt;R.appendChild(e);return e;};
+  for(const[nombre,h]of filas){
+    add('fila',nombre);
+    h.forEach((v,k)=>{const e=add('paso'+(k%4?'':' tiempo'));const i=document.createElement('i');i.style.opacity=(0.08+0.92*v*v).toFixed(2);e.appendChild(i);e.title=nombre+', semicorchea '+(k+1)+': '+Math.round(v*100)+' %';});
+  }
+  add('fila','');for(let k=0;k<16;k++)add('num',k%4?'·':String(k/4+1));
+  R.setAttribute('aria-label','Patrón de golpes: '+g.nombre);
+  const sw=Math.abs(g.swing)<0.08?'Recto':(g.swing>0?'Arrastrado ':'Adelantado ')+Math.round(Math.abs(g.swing)*100)+' %';
+  const todo={a:0,b:A.barras.length},dm=dens(todo),bm=brillo(todo);
+  const datos=[['Patrón',g.nombre],['Swing',sw]];
+  if(dm!=null)datos.push(['Densidad media',Math.round(dm*100)+' %']);
+  if(bm!=null)datos.push(['Brillo medio',coma(bm/1000,1)+' kHz']);
+  for(const[t,v]of datos){const d=document.createElement('div');d.className='cifra';d.innerHTML='<dt></dt><dd></dd>';d.querySelector('dt').textContent=t;d.querySelector('dd').textContent=v;D.appendChild(d);}
 }
 function normalizar(){
   const rol=[];for(const s of A.segs)for(let j=s.a;j<s.b;j++)rol[j]=s.rol;
@@ -693,6 +924,7 @@ function actualizarPrompts(){
   const n=rolesPresentes().length,entero=Math.ceil(A.dur/8);
   $('#ahorro').innerHTML='<strong>'+n+' videos · '+tomas+(tomas===1?' toma':' tomas')+' de 8 s</strong> ('+tomas*8+' s de generación) cubren la canción entera, porque el motor los repite y los lleva al tempo. Un video del tema de principio a fin serían '+entero+' tomas.';
   $('#hoja').textContent=hoja(nombres);
+  actualizarPedido();
 }
 function consejo(r,v){
   const l=[];
@@ -707,7 +939,10 @@ function consejo(r,v){
 }
 function hoja(nombres){
   const pad=(s,n)=>(s+' '.repeat(n)).slice(0,n);
-  const l=['Canción   '+A.titulo,'Tempo     '+nBpm(A.bpm)+' BPM · '+A.barras.length+' compases · '+mmss(A.dur),'El 1      '+coma(Math.max(0,A.uno),2)+' s','','Secciones'];
+  const l=['Canción   '+A.titulo,'Tempo     '+nBpm(A.bpm)+' BPM · '+A.barras.length+' compases · '+mmss(A.dur),'El 1      '+coma(Math.max(0,A.uno),2)+' s'];
+  if(A.tono)l.push('Tonalidad '+A.tono.nombre+' · '+A.tono.camelot+(A.tono.claridad<0.03?' (dudosa)':''));
+  if(A.groove)l.push('Groove    '+A.groove.nombre);
+  l.push('','Secciones');
   for(const s of A.segs)l.push('  '+pad('c. '+(s.a+1)+'–'+s.b,12)+pad(mmss(tBar(s.a),1),9)+pad(NOMBRE[s.rol],8)+(s.b-s.a)+' c.');
   l.push('','En el motor','  Mood '+MOODS[prefs.mood].nombre+' · teclas 1 intro · 2 groove · 3 break · 4 subida · 5 drop');
   const sub=A.segs.filter(s=>s.rol==='subida');
@@ -716,6 +951,8 @@ function hoja(nombres){
   if(cues.length)l.push('  Hotcues en Traktor: '+cues.map(s=>mmss(tBar(s.a),1)+' '+NOMBRE[s.rol].toLowerCase()).join(' · '));
   l.push('','Videos (protocolo de 120 BPM)');
   for(const n of nombres)l.push('  '+n);
+  const it=interpActual();
+  if(it&&it.frases&&it.frases.length)l.push('','Frases de impacto',...it.frases.map(f=>'  '+f));
   return l.join('\n');
 }
 function pintarMoods(){
@@ -727,6 +964,103 @@ function pintarPaleta(){
   $('#nomPaleta').textContent='Paleta '+p.nombre;
   $('#paleta').innerHTML=['fondo','base','tension','acento','flash'].map(k=>'<span style="background:'+p[k]+'" title="'+k+'"></span>').join('');
 }
+
+/* ── la letra y Claude: el lector mide, Claude interpreta lo medido junto con la letra ── */
+const LIMITE_LETRA=15000;
+const clave=()=>A?A.titulo:'';
+const interpActual=()=>(prefs.interps||{})[clave()]||null;
+function recortarMapa(m){const ks=Object.keys(m);while(ks.length>6)delete m[ks.shift()];}   // las 6 últimas canciones
+function restaurarLetra(){
+  const t=$('#txtLetra');if(document.activeElement!==t)t.value=(prefs.letras||{})[clave()]||'';
+  pintarLectura();actualizarPedido();
+}
+function guardarLetra(txt){prefs.letras=prefs.letras||{};prefs.letras[clave()]=txt;recortarMapa(prefs.letras);guardar();}
+function seccionEn(t){const j=Math.floor((t-A.uno)/(4*A.T));return A.segs.find(s=>j>=s.a&&j<s.b)||null;}
+// con tiempos tipo LRC ([01:23.45]), cada línea dice en qué sección y compás cae
+function letraAnotada(txt){
+  const lineas=txt.split(/\r?\n/),re=/^\s*\[(\d{1,2}):(\d{1,2}(?:[.,]\d+)?)\]/;
+  if(lineas.filter(l=>re.test(l)).length<Math.max(3,0.3*lineas.filter(l=>l.trim()).length))return txt;
+  return lineas.map(l=>{
+    const m=l.match(re);if(!m)return l;
+    const t=+m[1]*60+parseFloat(m[2].replace(',','.')),sec=seccionEn(t),resto=l.replace(/^\s*(\[[^\]]*\]\s*)+/,'');
+    return'['+mmss(t)+(sec?' · '+NOMBRE[sec.rol].toLowerCase()+', c. '+(Math.floor((t-A.uno)/(4*A.T))+1):'')+'] '+resto;
+  }).join('\n');
+}
+function pedido(){
+  if(!A)return'';
+  const bruto=($('#txtLetra').value||'').trim(),txt=bruto.slice(0,LIMITE_LETRA),presentes=rolesPresentes();
+  return[
+    'Eres el director visual de PRotocolive, el show en vivo del DJ Peter Romo (PR). Lee esta canción, ya analizada por el Lector de Pistas, y propón sus visuales.',
+    '',
+    'Canción: '+A.titulo,
+    'Tempo: '+nBpm(A.bpm)+' BPM'+(A.tono?' · Tonalidad: '+A.tono.nombre+(A.tono.claridad<0.03?' (dudosa)':''):'')+(A.groove?' · Groove: '+A.groove.nombre:''),
+    'Secciones (compases, inicio, sección, densidad del espectro, brillo):',
+    ...A.segs.map(s=>'- c. '+(s.a+1)+'–'+s.b+' · '+mmss(tBar(s.a))+' · '+NOMBRE[s.rol].toLowerCase()+(dens(s)!=null?' · densidad '+Math.round(dens(s)*100)+' %':'')+(brillo(s)!=null?' · brillo '+coma(brillo(s)/1000,1)+' kHz':'')),
+    '(En el motor, "drop" es el coro: la parte que más se repite y más fuerte suena.)',
+    '',
+    'Moods del motor (id: nombre, escena):',
+    ...Object.keys(MOODS).map(k=>'- '+k+': '+MOODS[k].nombre+', '+MOODS[k].escena),
+    '',
+    txt?'Letra'+(txt.length<bruto.length?' (recortada)':'')+':\n"""\n'+letraAnotada(txt)+'\n"""':'No hay letra: guíate por el tempo, el groove, la tonalidad y la energía.',
+    '',
+    'Responde solo con un objeto JSON con esta forma:',
+    '{"tema": "...", "arco": "...", "mood": "'+prefs.mood+'", "mood_por_que": "...", "videos": {'+presentes.map(r=>'"'+r+'": "..."').join(', ')+'}, "frases": ["...", "..."]}',
+    '',
+    'Reglas:',
+    '- tema: de qué trata la canción, en español, en 1 o 2 frases.',
+    '- arco: cómo cambia la emoción entre el verso y el coro, en español, en 1 o 2 frases.',
+    '- mood: el id de uno de los moods de la lista; mood_por_que: por qué, en una frase en español.',
+    '- videos: una clave por cada sección que tiene esta canción ('+presentes.join(', ')+'). El valor es lo que se ve en ese video, EN INGLÉS, como una sola imagen concreta de 10 a 25 palabras: sujeto, materia y luz, sobre fondo negro. Sin texto ni letras, sin logos, sin personas reales y sin personajes con dueño. Que salga de las imágenes y metáforas de la letra sin ilustrarla al pie de la letra, y que cada sección se distinga: el intro aparece, el groove se mueve constante, el break respira, la subida acelera hacia la luz y el drop estalla.',
+    '- frases: de 3 a 6 frases cortas en español para la pantalla en el coro, de 1 a 4 palabras cada una. Pueden ser ganchos cortos de la letra.'
+  ].join('\n');
+}
+function actualizarPedido(){$('#pedidoTexto').textContent=pedido();}
+// devuelve cuántos videos recibieron idea, o -1 si la respuesta no sirve
+function aplicarInterpretacion(r){
+  if(!r||typeof r!=='object'||Array.isArray(r))return-1;
+  const txt=v=>typeof v==='string'?v.trim().slice(0,400):'';
+  const it={tema:txt(r.tema),arco:txt(r.arco),mood:MOODS[r.mood]?r.mood:'',mood_por_que:txt(r.mood_por_que),
+    frases:Array.isArray(r.frases)?r.frases.filter(f=>typeof f==='string'&&f.trim()).map(f=>f.trim().slice(0,40)).slice(0,8):[]};
+  let n=0;const ideas={};
+  if(r.videos&&typeof r.videos==='object')for(const k of ROLES){const v=txt(r.videos[k]);if(v){ideas[k]=v;n++;}}
+  if(!it.tema&&!n&&!it.frases.length)return-1;
+  Object.assign(prefs.ideas,ideas);
+  if(it.mood)prefs.mood=it.mood;
+  prefs.interps=prefs.interps||{};prefs.interps[clave()]=it;recortarMapa(prefs.interps);
+  guardar();pintarMoods();pintarLectura();pintarTarjetas();
+  return n;
+}
+function pintarLectura(){
+  const it=interpActual(),box=$('#lectura');box.hidden=!it;if(!it)return;
+  $('#lTema').textContent=it.tema||'—';$('#lArco').textContent=it.arco||'—';
+  $('#lMood').textContent=it.mood?MOODS[it.mood].nombre+(it.mood_por_que?': '+it.mood_por_que:''):'—';
+  const ul=$('#lFrases');ul.textContent='';
+  for(const f of it.frases){const li=document.createElement('li');li.textContent=f;ul.appendChild(li);}
+  $('#frasesTexto').textContent=it.frases.join('\n');
+}
+let claudeIA=null,ctlIA=null;
+function avisoLetra(t,error){const e=$('#estadoLetra');e.textContent=t;e.classList.toggle('error',!!error);}
+async function interpretar(){
+  if(!claudeIA||!A)return;
+  const b=$('#btnInterpretar');
+  ctlIA=new AbortController();b.disabled=true;$('#btnPararIA').hidden=false;
+  avisoLetra('Claude está leyendo la canción. Suele tardar entre 20 segundos y un minuto.');
+  try{
+    const n=aplicarInterpretacion(await claudeIA.json(pedido(),{signal:ctlIA.signal}));
+    if(n<0)avisoLetra('La respuesta llegó vacía. Vuelve a intentarlo.',true);
+    else{const it=interpActual();avisoLetra('Listo: '+n+(n===1?' video':' videos')+' con su idea'+(it.frases.length?' y '+it.frases.length+' frases para la pantalla':'')+'. Revisa cada prompt abajo.');}
+  }catch(e){
+    const c=e&&e.code;
+    if(['not_granted','sampling_disabled','not_declared','capability_disabled','capability_removed'].includes(c))b.hidden=true;
+    const msg={cancelled:'',not_granted:'No se dio permiso para usar Claude desde la página. Usa «Copiar para Claude» y pégalo en un chat.',
+      sampling_disabled:'Claude no está disponible para esta cuenta. Usa «Copiar para Claude».',rate_limited:'Demasiadas consultas seguidas, o se acabó el uso por ahora. Prueba en un rato.',
+      invalid_json:'La respuesta no vino en el formato esperado. Vuelve a intentarlo.',refused:'Claude no quiso responder a esta letra.',
+      session_expired:'Vuelve a iniciar sesión en claude.ai.',prompt_too_large:'La letra es demasiado larga: recórtala.'}[c];
+    avisoLetra(msg!==undefined?msg:'Falló la conexión con Claude. Vuelve a intentarlo.',c!=='cancelled');
+  }finally{b.disabled=false;$('#btnPararIA').hidden=true;ctlIA=null;}
+}
+if(window.claude&&typeof window.claude.use==='function')
+  window.claude.use('sample').then(f=>{claudeIA=f||null;$('#btnInterpretar').hidden=!f;}).catch(()=>{});
 
 /* ── escuchar ── */
 const rep={ctx:null,fuente:null,inicio:0,pos:0,sonando:false,clic:false,k:0,timer:0,raf:0};
@@ -874,11 +1208,20 @@ $('#tarjetas').addEventListener('change',e=>{
   if(e.target.id==='selPrevios'){prefs.previos=+e.target.value;guardar();actualizarPrompts();}
 });
 document.addEventListener('click',e=>{const b=e.target.closest('[data-copiar]');if(b)copiar(b);});
+$('#txtLetra').addEventListener('input',e=>{if(!A)return;guardarLetra(e.target.value);actualizarPedido();});
+$('#btnInterpretar').addEventListener('click',interpretar);
+$('#btnPararIA').addEventListener('click',()=>{if(ctlIA)ctlIA.abort();});
+$('#btnAplicar').addEventListener('click',()=>{
+  const t=$('#txtRespuesta').value;let r=null;
+  try{r=JSON.parse(t);}catch(e){const a=t.indexOf('{'),z=t.lastIndexOf('}');if(a>=0&&z>a)try{r=JSON.parse(t.slice(a,z+1));}catch(e2){}}
+  const n=r?aplicarInterpretacion(r):-1;
+  avisoLetra(n<0?'No encontré la respuesta en lo que pegaste: copia la respuesta entera de Claude.':'Aplicada: '+n+(n===1?' video':' videos')+' con su idea.',n<0);
+});
 let espera=0;new ResizeObserver(()=>{cancelAnimationFrame(espera);espera=requestAnimationFrame(pintarMapa);}).observe(mapa);
 
 pintarMoods();pintarMapa();
 // para las pruebas
-window.__lector={get A(){return A;},prefs,analizar,armarPrompt,armarSubida};
+window.__lector={get A(){return A;},prefs,analizar,armarPrompt,armarSubida,pedido,aplicarInterpretacion};
 setTimeout(async()=>{
   try{await analizar(pistaEjemplo(),'Pista de ejemplo, 128 BPM',true);}
   catch(e){estado('Este navegador no pudo analizar la pista de ejemplo. Abre una canción para empezar.',true);}
